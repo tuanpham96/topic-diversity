@@ -7,12 +7,10 @@ library(bipartite)
 library(igraph)
 
 library(pbmcapply)
-library(gtools)
-
 library(magrittr)
 source('src/topic_discovery.R')
 
-set.seed(284) # for reproducibility of plotting + cluster assigments 
+set.seed(2802) # for reproducibility of plotting + cluster assigments 
 
 
 ## ----------------------------------------------------------------------------------------------------------------
