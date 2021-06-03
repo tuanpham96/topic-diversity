@@ -1,0 +1,330 @@
+---
+title: "Topic/knowledge discovery and diversity in a social network"
+subtitle: "A toy model idea"
+author: Tuan Pham 
+output:
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding,
+  output_dir = ".", output_format = "all") })
+---
+
+```{r echo=F}
+knitr::opts_chunk$set(
+  echo = F, eval = T,  
+  message=F, warning=F,
+  fig.align = "center")
+```
+
+```{r include=F}
+library(tidyverse)
+library(reshape2)
+library(purrr)
+
+library(bipartite)
+library(igraph)
+
+library(pbmcapply)
+library(gtools)
+
+library(magrittr)
+
+source('src/topic_discovery.R')
+```
+
+---
+
+```{r}
+n_t <- 1000
+n_a <- 200
+p_alpha <- 0.7
+tau_max <- 20
+tau_0 <- 2
+setdiff_peropt <- TRUE
+mdl_gen <- list(
+  agent = partial(sample_pa,m=2,power=2,directed=F),
+  topic = partial(sample_pa,m=2,power=2,directed=F)
+)
+
+tdconfig <- TopicDiscoveryConfig$new(n_a = n_a, 
+                         n_t = n_t,
+                         p_alpha = p_alpha, 
+                         tau_max = tau_max,
+                         tau_0 = tau_0,
+                         mdl_gen = mdl_gen,
+                         colors = T)
+
+td <- TopicDiscovery$new(n_a = n_a, 
+                         n_t = n_t,
+                         p_alpha = p_alpha, 
+                         tau_max = tau_max,
+                         tau_0 = tau_0,
+                         mdl_gen = mdl_gen,
+                         colors = T,
+                         info = list(haha=1))
+```
+
+---
+
+```{r}
+M <- as_adjacency_matrix(td$G) %>% as.matrix()
+agents_ind <- V(td$G)$role == "agents"
+A_mat <- M[agents_ind, agents_ind]
+T_mat <- M[!agents_ind, !agents_ind]
+
+TAU_mat <- M[!agents_ind, agents_ind]
+        
+new_topics_df <-
+  td$p_alpha * colNorm(1 * (((T_mat %*% TAU_mat > 0) - TAU_mat) > 0)) +
+  td$p_beta  * colNorm(1 * (((TAU_mat %*% A_mat > 0) - TAU_mat) > 0))
+
+new_topics_df %<>%
+  melt(c("to", "from")) %>%
+  rename(prob = value) %>% 
+  filter(prob > 0) %>%
+  group_by(from) %>% 
+  slice_sample(weight_by = prob) %>%
+  select(to, from)
+
+new_topics_df  
+
+```
+
+```{r}
+G_A <- induced_subgraph(td$G, 1:td$n_a)
+G_T <- induced_subgraph(td$G, (td$n_a+1):(td$n_a+td$n_t)) 
+degree(G_T) %>% mean
+
+igraph::graph.density(G_T)
+
+P_select_topic <- data.frame(f = degree(G_T)) %>% 
+  rownames_to_column(var = 'topic') %>% 
+  mutate(p = f/sum(f))
+
+P_select_topic <- data.frame(f = degree(G_T)) %>% 
+  rownames_to_column(var = 'topic') %>% 
+  mutate(f = f^2) %>% 
+  mutate(p = f/sum(f))
+
+P_select_topic <- data.frame(f = degree(G_T)) %>% 
+  rownames_to_column(var = 'topic') %>% 
+  mutate(f = 1 + max(f) - f) %>% 
+  mutate(p = f/sum(f))
+
+P_select_topic <- data.frame(f = degree(G_T)) %>% 
+  rownames_to_column(var = 'topic') %>% 
+  mutate(f = 1/(f+1)) %>% 
+  mutate(p = f/sum(f))
+
+P_select_topic %>% arrange(desc(p)) %>% 
+  mutate(topic=factor(topic)) %>% 
+  ggplot(aes(topic, p)) + geom_point()
+
+softmax_beta <- -0.1
+P_select_topic <- data.frame(d = degree(G_T)) %>% 
+  rownames_to_column(var = 'topic') %>% 
+  mutate(f = exp(softmax_beta * d)) %>% 
+  mutate(p = f/sum(f))
+
+qplot(P_select_topic$d, P_select_topic$p)
+
+slice_sample(P_select_topic, n = 5,weight_by = p,replace=F)$topic
+
+```
+
+
+```{r test on samegroup sampling}
+topic_groupvec <- tibble(
+  name = paste('t', 1:20, sep=''),
+  group = rep(1:4, rep(20/4,4))
+)
+aoi_group <- 4
+p_same <- 0.3
+topic_groupvec %>% 
+  mutate(samegroup = (group == aoi_group)) %>% 
+  mutate(p = if_else(samegroup, p_same/sum(samegroup), (1-p_same)/sum(!samegroup)))
+```
+
+---
+
+```{r}
+
+c(0, 1, 2) %>% lapply(function(x) {
+  barabasi.game(200, m = 2, power = 1, zero.appeal = x, directed = F) %>% 
+    degree() -> d 
+  fit_power_law(d+1,10)$alpha
+})
+
+```
+
+```{r}
+p_r <- c(0.001, 0.005, 0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8)
+WS_stat <- p_r %>% lapply(function(p) {
+  g <- sample_smallworld(1, 1000, 5, p)
+  L <- mean_distance(g)
+  C <- transitivity(g, type="global")
+  return(list(C = C , L = L, p = p))
+}) %>% bind_rows() %>% 
+  mutate(C = C/max(C),
+         L = L/max(L))
+  # mutate(C = (C-min(C))/(max(C)-min(C)),
+  #        L = (L-min(L))/(max(L)-min(L)))
+
+WS_stat %>% melt(id='p') %>% 
+  ggplot(aes(x=p,y=value,color=variable)) +
+  geom_line() + scale_x_log10()
+```
+```{r}
+g <- sample_gnp(1000, p=0.01,directed=F)
+# plot(g, layout=layout.lgl, vertex.size=1, vertex.label=NA)
+
+image(as_adjacency_matrix(g,sparse=F))
+# plot(igraph::degree_distribution(g, cumulative=F))
+
+qplot(igraph::degree(g))
+
+```
+
+```{r}
+g<-sample_smallworld(1, 1000, 5, 0.1)
+plot(g,layout=layout.lgl, vertex.size=1, vertex.label=NA)
+image(g %>% as_adjacency_matrix(sparse=F))
+
+qplot(igraph::degree(g))
+```
+
+```{r}
+
+g <- igraph::sample_pa_age(10000, pa.exp=1, aging.exp=-3, aging.bin=1000)
+igraph::fit_power_law(igraph::degree(g)+1,10)$alpha
+plot(igraph::degree_distribution(g, cumulative=TRUE), log="xy")
+
+```
+
+```{r}
+g <- sample_pa(1000,m=2,power=0.8,zero.appeal = 0, directed=F)
+igraph::fit_power_law(igraph::degree(g)+1,10)$alpha
+plot(igraph::degree_distribution(g, cumulative=TRUE), log="xy")
+
+qplot(igraph::degree(g))
+```
+
+```{r}
+g <- sample_pa(1000,m=2,power=0.8,zero.appeal = 0, directed=F)
+igraph::fit_power_law(igraph::degree(g)+1,10)$alpha
+plot(igraph::degree_distribution(g, cumulative=TRUE), log="xy")
+plot(g, layout = layout_with_fr, vertex.size=1, vertex.label=NA)
+
+g <- sample_pa(1000,m=2,power=1.00,zero.appeal = 0, directed=F)
+igraph::fit_power_law(igraph::degree(g)+1,10)$alpha
+plot(igraph::degree_distribution(g, cumulative=TRUE), log="xy")
+plot(g, layout = layout_with_fr, vertex.size=1, vertex.label=NA)
+
+g <- sample_pa(1000,m=2,power=1.2,zero.appeal = 0, directed=F)
+igraph::fit_power_law(igraph::degree(g)+1,10)$alpha
+plot(igraph::degree_distribution(g, cumulative=TRUE), log="xy")
+plot(g, layout = layout_with_gem(), vertex.size=1, vertex.label=NA)
+# 
+# 
+# g <- sample_pa(200,m=2,power=1.00,zero.appeal = 1, directed=F)
+# igraph::fit_power_law(igraph::degree(g)+1,10)$alpha
+# plot(igraph::degree_distribution(g, cumulative=TRUE), log="xy")
+# plot(g, vertex.size=1, vertex.label=NA)
+# 
+# g <- sample_pa(200,m=2,power=1.00,zero.appeal = 5, directed=F)
+# igraph::fit_power_law(igraph::degree(g)+1,10)$alpha
+# plot(igraph::degree_distribution(g, cumulative=TRUE), log="xy")
+# plot(g, vertex.size=1, vertex.label=NA)
+```
+
+---
+
+
+
+
+```{r}
+BLOCK_model_generation_lists <- list(
+  SBM_1 = partial(make_sbmgen_partial,num_blocks=10,p_within=0.1,p_between=0.001),
+  SBM_2 = partial(make_sbmgen_partial,num_blocks=10,p_within=0.1,p_between=0.01)
+)
+BLOCK_groupvec_generator <- list(
+  agent = partial(make_groupvec, num_blocks = 10),
+  topic = partial(make_groupvec, num_blocks = 10)
+)
+BLOCK_interinit_lists <- list(
+  RAND = list(type="random", params=list()),
+  GROUP_1 = list(type="groups", params=list(p_same = 0.2)),
+  GROUP_2 = list(type="groups", params=list(p_same = 0.8))
+)
+
+NONBLOCK_model_generation_lists <- list(
+  BA = partial(sample_pa,m=2,power=1.00,directed=F),
+  ER = partial(sample_gnp,p=0.01,directed=F), 
+  WS = partial(sample_smallworld,dim=1,nei=5,p=0.1)
+)
+NONBLOCK_interinit_lists <- list(
+  RAND = list(type="random", params=list()),
+  SOFTMAX_1 = list(type="softmax", params=list(beta_softmax = -0.2)),
+  SOFTMAX_2 = list(type="softmax", params=list(beta_softmax = 0)),
+  SOFTMAX_3 = list(type="softmax", params=list(beta_softmax = 0.2))
+)
+
+```
+
+```{r nonblock model test}
+n_t <- 1000
+n_a <- 200
+p_alpha <- 0.7
+tau_max <- 50
+tau_0 <- 5
+max_nsteps <- 60
+
+td <- TopicDiscovery$new(n_a = n_a, 
+                         n_t = n_t,
+                         p_alpha = p_alpha, 
+                         tau_max = tau_max,
+                         max_nsteps = max_nsteps, 
+                         tau_0 = tau_0,
+                         mdl_gen = list(
+                           agent = NONBLOCK_model_generation_lists$BA,
+                           topic = NONBLOCK_model_generation_lists$WS
+                         ),
+                         groups = NA, 
+                         inter_init = NONBLOCK_interinit_lists$SOFTMAX_2,
+                         colors = F)
+
+image(td$G %>% as_adjacency_matrix(sparse = F))
+td$update_via_matmul(show_progress = T)
+
+data.frame(curr_ntopic=colSums(td$get_separate_matrices()$TAU)) 
+```
+
+
+```{r block model test}
+n_t <- 1000
+n_a <- 200
+p_alpha <- 0.3
+tau_max <- 50
+tau_0 <- 5
+max_nsteps <- 50
+
+
+td <- TopicDiscovery$new(n_a = n_a, 
+                         n_t = n_t,
+                         p_alpha = p_alpha, 
+                         tau_max = tau_max,
+                         max_nsteps = max_nsteps, 
+                         tau_0 = tau_0,
+                         mdl_gen = list(
+                           agent = BLOCK_model_generation_lists$SBM_2,
+                           topic = BLOCK_model_generation_lists$SBM_1
+                         ),
+                         groups = BLOCK_groupvec_generator, 
+                         inter_init = BLOCK_interinit_lists$GROUP_2,
+                         colors = F)
+
+
+image(td$G %>% as_adjacency_matrix(sparse = F))
+td$update_via_matmul(show_progress = T)
+
+# data.frame(curr_ntopic=colSums(td$get_separate_matrices()$TAU))
+```

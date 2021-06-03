@@ -3,7 +3,7 @@ library(reshape2)
 library(purrr)
 library(bipartite)
 library(igraph)
-library(parallel)
+library(pbmcapply)
 
 source('src/topic_discovery.R')
 
@@ -67,8 +67,8 @@ run_model_each <- function(comb_ind) {
 
 # run parallel 
 indlist_to_run <- param_df$ind
-mclapply(indlist_to_run, run_model_each,
-         mc.cores = 6, 
+pbmclapply(indlist_to_run, run_model_each,
+         mc.cores = 4, 
          mc.set.seed = TRUE,
          mc.preschedule	= TRUE)
 
