@@ -1,4 +1,4 @@
-## ----message=F---------------------------------------------------------------------------------------------------
+## ----message=F------------------------------------------------------------------------------------------------
 library(tidyverse)
 library(reshape2)
 library(purrr)
@@ -8,20 +8,26 @@ library(igraph)
 
 library(pbmcapply)
 library(magrittr)
+
+library(microbiome)
+library(moments)
+
 source('src/topic_discovery.R')
+source('src/topic_analysis.R')
+
 
 set.seed(1019) # for reproducibility of plotting + cluster assigments 
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 num_blocks <- 10 # for both 
-num_trials <- 10
+num_trials <- 5
 data_path <- 'data/block-models'
 dir.create(data_path, showWarnings = F)
 nworkers <- round(parallel::detectCores()/2)
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 intra_generators <- list(
   SBM_1 = partial(make_sbmgen_partial,num_blocks=num_blocks,p_within=0.1,p_between=0.001),
   SBM_2 = partial(make_sbmgen_partial,num_blocks=num_blocks,p_within=0.1,p_between=0.004),
@@ -45,14 +51,14 @@ all_intra_gens <- names(intra_generators)
 all_inter_ints <- names(inter_initiators)
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 # create paramdf 
 param_df <- expand_grid(
   n_t         = 1000, 
   n_a         = 200,
   tau_0       = 5,
   p_alpha     = c(0.1, 0.3, 0.5, 0.7, 0.9), 
-  tau_max     = 100,  
+  tau_max     = 50,  
   model_agent = all_intra_gens,
   model_topic = all_intra_gens,
   inter_init  = all_inter_ints,
@@ -79,7 +85,7 @@ saveRDS(sim_params_config, file.path(data_path, 'params.rds'))
 
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 cur_data <- list.files(path = data_path, pattern = 'data.*\\.rds$') %>% c
 cur_ind <- regmatches(cur_data, gregexpr("[[:digit:]]+", cur_data)) %>% as.numeric()
 remainder_ind <- setdiff(param_df$ind, cur_ind)
@@ -87,15 +93,16 @@ remainder_ind <- setdiff(param_df$ind, cur_ind)
 # length(remainder_ind)
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 # indlist_to_run <- remainder_ind # when interrupted or restart
 indlist_to_run <- param_df$ind
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 run_model_each <- function(comb_ind) {
   sim_param <- param_df[comb_ind,]
   data_file_name <- sim_param$data_file
+  proc_file_name <- sim_param$proc_file
   
   model_gen <- list(
     agent = intra_generators[[sim_param$model_agent]],
@@ -114,10 +121,15 @@ run_model_each <- function(comb_ind) {
     info         = sim_param,
     colors       = F
   )
-
   
   td$update_via_matmul(show_progress = F)
   td$save_to_file(data_file_name)
+  
+  div_metric <- analyze_diversity(td)
+  analysis_data <- list(diversity = div_metric, 
+                        info = sim_param)
+  saveRDS(analysis_data, file = proc_file_name)
+  
 }
 
 pbmclapply(indlist_to_run, 

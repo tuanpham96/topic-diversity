@@ -157,7 +157,8 @@ c(0, 1, 2) %>% lapply(function(x) {
 ```
 
 ```{r}
-p_r <- c(0.001, 0.005, 0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8)
+# p_r <- c(0.001, 0.005, 0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8)
+p_r <- c(0.001, 0.005, 0.025, 0.125, 0.625)
 WS_stat <- p_r %>% lapply(function(p) {
   g <- sample_smallworld(1, 1000, 5, p)
   L <- mean_distance(g)
@@ -173,6 +174,7 @@ WS_stat %>% melt(id='p') %>%
   ggplot(aes(x=p,y=value,color=variable)) +
   geom_line() + scale_x_log10()
 ```
+
 ```{r}
 g <- sample_gnp(1000, p=0.01,directed=F)
 # plot(g, layout=layout.lgl, vertex.size=1, vertex.label=NA)
@@ -185,11 +187,11 @@ qplot(igraph::degree(g))
 ```
 
 ```{r}
-g<-sample_smallworld(1, 1000, 5, 0.1)
-plot(g,layout=layout.lgl, vertex.size=1, vertex.label=NA)
+g<-sample_smallworld(1, 200, 5, 0.16)
+plot(g,layout=layout_with_drl, vertex.size=1, vertex.label=NA)
 image(g %>% as_adjacency_matrix(sparse=F))
-
-qplot(igraph::degree(g))
+# 
+# qplot(igraph::degree(g))
 ```
 
 ```{r}
@@ -286,7 +288,7 @@ td <- TopicDiscovery$new(n_a = n_a,
                          tau_0 = tau_0,
                          mdl_gen = list(
                            agent = NONBLOCK_model_generation_lists$BA,
-                           topic = NONBLOCK_model_generation_lists$WS
+                           topic = NONBLOCK_model_generation_lists$BA
                          ),
                          groups = NA, 
                          inter_init = NONBLOCK_interinit_lists$SOFTMAX_2,
@@ -319,7 +321,8 @@ td <- TopicDiscovery$new(n_a = n_a,
                            topic = BLOCK_model_generation_lists$SBM_1
                          ),
                          groups = BLOCK_groupvec_generator, 
-                         inter_init = BLOCK_interinit_lists$GROUP_2,
+                         # inter_init = BLOCK_interinit_lists$GROUP_2,
+                         inter_init = list(type="groups", params=list(p_same = 0.8)),
                          colors = F)
 
 

@@ -304,8 +304,7 @@ TopicDiscovery <- R6Class(
       V_G$node_id <- 1:(n_a + n_t)
       
       G <<- rbind(E_G, E_Tau0) %>% 
-        graph.data.frame(vertices = V_G, directed = F) %>%
-        igraph::simplify()
+        graph.data.frame(vertices = V_G, directed = F) 
       E(G)$onset <<- 0
     },
     get_separate_matrices = function() {
@@ -436,9 +435,9 @@ TopicDiscovery <- R6Class(
           new_topics_df %>% as.matrix() %>% t %>% as.vector()
         
         if (use_colors) {
-          G <<- add_edges(G, edge_seq, onset = ni, color = colors$new_cross) %>% igraph::simplify()
+          G <<- add_edges(G, edge_seq, onset = ni, color = colors$new_cross) 
         } else {
-          G <<- add_edges(G, edge_seq, onset = ni) %>% igraph::simplify()
+          G <<- add_edges(G, edge_seq, onset = ni) 
         }
         
         if (show_progress) {

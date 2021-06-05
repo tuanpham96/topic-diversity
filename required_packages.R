@@ -7,7 +7,13 @@ required_pkgs <- c(
   'pbmcapply',
   'gtools',
   'magrittr',
-  'progress'
+  'progress',
+  'BiocManager',
+  'moments',
+  'jacpop'
 )
  
 install.packages(required_pkgs)
+
+# Additional packages 
+BiocManager::install("microbiome")

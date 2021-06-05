@@ -1,4 +1,4 @@
-## ----message=F---------------------------------------------------------------------------------------------------
+## ----message=F------------------------------------------------------------------------------------------------
 library(tidyverse)
 library(reshape2)
 library(purrr)
@@ -8,19 +8,24 @@ library(igraph)
 
 library(pbmcapply)
 library(magrittr)
+
+library(microbiome)
+library(moments)
+
 source('src/topic_discovery.R')
+source('src/topic_analysis.R')
 
 set.seed(2802) # for reproducibility of plotting + cluster assigments 
 
 
-## ----------------------------------------------------------------------------------------------------------------
-num_trials <- 10
+## -------------------------------------------------------------------------------------------------------------
+num_trials <- 5
 data_path <- 'data/nonblock-models'
 dir.create(data_path, showWarnings = F)
 nworkers <- round(parallel::detectCores()/2)
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 intra_generators <- list(
   PA_1 = partial(sample_pa,m=2,power=0.80,directed=F),
   PA_2 = partial(sample_pa,m=2,power=1.00,directed=F),
@@ -28,30 +33,30 @@ intra_generators <- list(
   ER_1 = partial(sample_gnp,p=0.010,directed=F), 
   ER_2 = partial(sample_gnp,p=0.050,directed=F), 
   ER_3 = partial(sample_gnp,p=0.100,directed=F), 
-  WS_1 = partial(sample_smallworld,dim=1,nei=5,p=0.001),
-  WS_2 = partial(sample_smallworld,dim=1,nei=5,p=0.004),
-  WS_3 = partial(sample_smallworld,dim=1,nei=5,p=0.160),
-  WS_4 = partial(sample_smallworld,dim=1,nei=5,p=0.640)
+  WS_1 = partial(sample_smallworld,dim=1,nei=5,p=0.005),
+  WS_2 = partial(sample_smallworld,dim=1,nei=5,p=0.025),
+  WS_3 = partial(sample_smallworld,dim=1,nei=5,p=0.125),
+  WS_4 = partial(sample_smallworld,dim=1,nei=5,p=0.625)
 )
 
 inter_initiators <- list(
-  SOFTMAX_1 = list(type="softmax", params=list(beta_softmax = -0.2)),
+  SOFTMAX_1 = list(type="softmax", params=list(beta_softmax = -0.5)),
   SOFTMAX_2 = list(type="softmax", params=list(beta_softmax = 0)),
-  SOFTMAX_3 = list(type="softmax", params=list(beta_softmax = 0.2))
+  SOFTMAX_3 = list(type="softmax", params=list(beta_softmax = 0.5))
 )
 
 all_intra_gens <- names(intra_generators)
 all_inter_ints <- names(inter_initiators)
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 # create paramdf 
 param_df <- expand_grid(
   n_t         = 1000, 
   n_a         = 200,
   tau_0       = 5,
   p_alpha     = c(0.1, 0.3, 0.5, 0.7, 0.9), 
-  tau_max     = c(25, 50, 100),  
+  tau_max     = c(25, 50),  
   model_agent = all_intra_gens,
   model_topic = all_intra_gens,
   inter_init  = all_inter_ints,
@@ -77,7 +82,7 @@ saveRDS(sim_params_config, file.path(data_path, 'params.rds'))
 
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 cur_data <- list.files(path = data_path, pattern = 'data.*\\.rds$') %>% c
 cur_ind <- regmatches(cur_data, gregexpr("[[:digit:]]+", cur_data)) %>% as.numeric()
 remainder_ind <- setdiff(param_df$ind, cur_ind)
@@ -85,15 +90,16 @@ remainder_ind <- setdiff(param_df$ind, cur_ind)
 # length(remainder_ind)
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 # indlist_to_run <- remainder_ind # when interrupted or restart
 indlist_to_run <- param_df$ind
 
 
-## ----------------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 run_model_each <- function(comb_ind) {
   sim_param <- param_df[comb_ind,]
   data_file_name <- sim_param$data_file
+  proc_file_name <- sim_param$proc_file
   
   model_gen <- list(
     agent = intra_generators[[sim_param$model_agent]],
@@ -114,6 +120,12 @@ run_model_each <- function(comb_ind) {
   
   td$update_via_matmul(show_progress = F)
   td$save_to_file(data_file_name)
+  
+  div_metric <- analyze_diversity(td)
+  analysis_data <- list(diversity = div_metric, 
+                        info = sim_param)
+  saveRDS(analysis_data, file = proc_file_name)
+  
 }
 
 pbmclapply(indlist_to_run, 
