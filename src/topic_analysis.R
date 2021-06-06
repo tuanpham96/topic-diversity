@@ -49,7 +49,9 @@ analysis_through_time <- function(td, samp_time = -1,
 }
 
 
-analyze_diversity <- function(td, nrep_2ndextinct=5) {
+analyze_diversity <- function(td,
+                              nrep_robustness = 5, 
+                              valuetype_robustness = 'degree') {
   
   calculate_entropy <- purrr::partial(vegan::diversity, index='shannon',  base = 2)
   
@@ -59,6 +61,15 @@ analyze_diversity <- function(td, nrep_2ndextinct=5) {
     graph_from_adjacency_matrix(mode='undirected') %>% 
     distances(mode = 'all')
   topic_distmat[is.infinite(topic_distmat)] <- NA # so don't consider Inf values 
+  
+  # agent degree in agent graph
+  agent_degree <- colSums(td$get_separate_matrices()$A)
+  
+  if (valuetype_robustness == 'degree') {
+    robustness_valuevec <- agent_degree
+  } else {
+    stop('Currently only support `valuetype_robustness = "degree"` as removal value for robustness calculation')
+  }
   
   # node data frames 
   node_df <- as_data_frame(td$G, 'vertices')
@@ -144,16 +155,17 @@ analyze_diversity <- function(td, nrep_2ndextinct=5) {
   # note: `TAU [topic x agent]`, and `second.extinct` uses `web [lower x higher]` so remove `agent = higher` 
   #   random removal 
   label_list$R_T_random <- 'topic robustness (random removal of agent)'
-  value_list$R_T_random <- all_mats$TAU %>% 
-    bipartite::second.extinct(participant = 'higher', method = 'random', nrep = nrep_2ndextinct) %>% 
-    bipartite::robustness()
+  value_list$R_T_random <- calculate_robustness(all_mats$TAU, type = 'random', nrep = nrep_robustness)
   
   #   targeted removal by degree
-  label_list$R_T_degree <- 'topic robustness (removal of agent by degree rank)'
-  value_list$R_T_degree <- all_mats$TAU %>% 
-    bipartite::second.extinct(participant = 'higher', method = 'degree', nrep = nrep_2ndextinct) %>% 
-    bipartite::robustness()
+  label_list$R_T_deghigh <- 'topic robustness (removal of agent with highest degree in agent graph first)'
+  value_list$R_T_deghigh <- calculate_robustness(all_mats$TAU, type = 'remove-most-first',
+                                                values = agent_degree, nrep = nrep_robustness)
   
+  label_list$R_T_deglow <- 'topic robustness (removal of agent with lowest degree in agent graph first)'
+  value_list$R_T_deglow <- calculate_robustness(all_mats$TAU, type = 'remove-least-first',
+                                                 values = agent_degree, nrep = nrep_robustness)
+
   # subgraph statistics 
   # d_g: mean distance of the distance matrix subsampled from the topic list
   # d_s: mean distance of the induced subgraph from the topic list
@@ -219,3 +231,71 @@ analyze_diversity <- function(td, nrep_2ndextinct=5) {
     values = value_list
   ))
 }
+
+
+auc_trapez <- function(x, y) {
+  # area under the curve of (x,y=f(x)) vectors using trapezoid method
+  # in other word AUC = sum(diff(x) * (y(1:end-1) + y(2:end)))/2
+  if (length(x) != length(y)) {
+    stop('Length of x and y have to be the same')
+  }
+  
+  n <- length(x)
+  dx <- x[2:n] - x[1:(n-1)]
+  sy <- 0.5*(y[2:n] + y[1:(n-1)])
+  return(sum(dx * sy))
+} 
+
+cum_ntopics <- function(M, i) {
+  # cumulative number of nonzero rows (topics) based on `1:i`
+  if (i > 1) {
+    return( sum(rowSums(M[,1:i]) > 0) )
+  } else if (i == 1) {
+    return( sum(M[,1:i] > 0) )
+  } else {
+    return(0)
+  }
+} 
+
+calculate_robustness <- function(M, type = 'random', values = NA, nrep = 10) {
+  # type: either 'random' or 'remove-most-first' or 'remove-least-first'
+  # values: vector indicating "agents" values (for example degree), 
+  #         if `type = 'random'` will ignore 
+  #         if `type = 'remove-most-first'` will remove the most of the values first 
+  #         if `type = 'remove-least-first'` will remove the least of the values first 
+  # nrep: number of repetitions for all methods (because values could be have repeating values)
+  num_topics <- dim(M)[1]
+  num_agents <- dim(M)[2]
+  
+  removal_type <- ifelse(type=='random', type, 'basedonval')
+  if (is.na(values) %>% all %>% not) {
+    unq_vals <- switch(
+      type, 
+      'remove-least-first' = unique(values) %>% sort(decreasing = TRUE), 
+      'remove-most-first' = unique(values) %>% sort(decreasing = FALSE),
+    )
+  } else if ((removal_type == 'basedonval') & length(values) != num_agents) {
+    stop('Need a value vector with length as same number of agents (ncol of matrix) for nonrandom types')
+  }
+  
+  auc_robustness <- sapply(1:nrep, function(.) {
+    # rand_order_vec: the first element in this vector is removed last
+    if (removal_type == 'random') {
+      rand_order_vec <- sample(num_agents)
+    } else if (removal_type == 'basedonval') {
+      rand_order_vec <- lapply(unq_vals, function(u) {
+        which(values == u) %>% as.vector() %>% sample
+      }) %>% unlist
+    } 
+    
+    M_randorder <- M[,rand_order_vec]
+    rem_ntopics <- sapply(0:num_agents, function(i){ cum_ntopics(M_randorder, i) })
+    vec_x <- (0:num_agents)/num_agents
+    vec_y <- rem_ntopics/num_topics
+    return(auc_trapez(vec_x,vec_y))
+  }) %>% mean(na.rm = TRUE)
+  
+  return(auc_robustness)
+}
+
+

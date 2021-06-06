@@ -3,22 +3,25 @@ title: "Run analysis scripts for diversity analysis through time"
 ---
 
 ```{r message=F}
-library(tidyverse)
-library(reshape2)
-library(purrr)
+import_packages <- function() {
+  library(tidyverse)
+  library(reshape2)
+  library(purrr)
+  
+  library(bipartite)
+  library(igraph)
+  
+  library(pbmcapply)
+  library(magrittr)
+  
+  library(microbiome)
+  library(moments)
+  
+  source('src/topic_discovery.R')
+  source('src/topic_analysis.R')
+}
 
-library(bipartite)
-library(igraph)
-
-library(pbmcapply)
-library(magrittr)
-
-library(microbiome)
-library(moments)
-
-source('src/topic_discovery.R')
-source('src/topic_analysis.R')
-
+suppressPackageStartupMessages(import_packages())
 
 # suppress `summarise` mesages
 # from: https://rstats-tips.net/2020/07/31/get-rid-of-info-of-dplyr-when-grouping-summarise-regrouping-output-by-species-override-with-groups-argument/
@@ -29,9 +32,9 @@ set.seed(2802) # for reproducibility of plotting + cluster assigments
 
 ```{r}
 # analysis parameters 
-samp_time <- 10
+samp_time <- 5
 anly_func <- analyze_diversity
-anly_args <- list(nrep_2ndextinct = 3)
+anly_args <- list(nrep_robustness = 5)
 ```
 
 

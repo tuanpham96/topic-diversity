@@ -254,41 +254,9 @@ Sys.time() - t0
 ```
 
 
-
-```{r}
-td <- readRDS(file.path(data_path, data_file))
-df_edges <- as_data_frame(td$G)
-time_vec <- seq(from=0,to=td$max_nsteps,by=samp_time)
-topic_distmat <- induced_subgraph(td$G,filter_noderole(V(td$G), 'topics')$name) %>% distances(mode = 'all')
-
-analysis_pertime <- lapply(time_vec, function(t_on) {
-  df_edges_selected <- filter(df_edges, onset <= t_on & 
-                                substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1))
-  
-  summarized_by_topics <- select(df_edges_selected, to) %>% group_by(to) %>% summarise(count = length(to)) 
-  topic_entropy <- calc_entropy(summarized_by_topics)
-  num_topics <- nrow(summarized_by_topics)
-  
-  group_topic_entropy <- summarized_by_topics %>%
-    left_join(topic_block_groups, by = c("to" = "topic_name")) %>%
-    select(topic_group, count) %>%
-    group_by(topic_group) %>%
-    summarise(count = sum(count)) %>%
-    calc_entropy
-  
-  summarized_by_agents <- group_by(df_edges_selected, from) %>% summarise(d=mean(topic_distmat[to,to]))
-  sub_dist_mean <- mean(summarized_by_agents$d)
-  sub_dist_median <- median(summarized_by_agents$d)
-  
-  return(tibble(t = t_on, topic_entropy, num_topics,
-                group_topic_entropy, 
-                sub_dist_mean, sub_dist_median))
-}) %>% bind_rows
-```
-
 ```{r}
 # test_file <- sprintf('data/nonblock-models/data-%06d.rds', 431)
-test_file <- sprintf('data/block-models/data-%06d.rds', 100)
+test_file <- sprintf('data/block-models/data-%06d.rds', 58)
 td <- readRDS(test_file)
 info <- td$info
 info
@@ -299,17 +267,18 @@ info
 options(dplyr.summarise.inform = FALSE)
 t0 <- Sys.time()
 samp_time <- -1 # only initial and last
-analysis_function <- analyze_diversity
-analysis_arguments <- list(nrep_2ndextinct = 2)
+analysis_func <- analyze_diversity
+analysis_args <- list(nrep_robustness = 5)
 
-anly_div_time <- analysis_through_time(td, samp_time = samp_time,
-                                       analysis_function, analysis_arguments = analysis_arguments)
+anly_div_time <- analysis_through_time(td, 
+                                       samp_time = samp_time,
+                                       analysis_function = analysis_func,
+                                       analysis_arguments = analysis_args)
 
 
-
+Sys.time() - t0
 anly_div_time
 
 ```
-
 
 
