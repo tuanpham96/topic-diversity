@@ -1,0 +1,703 @@
+---
+title: "Topic/knowledge discovery and diversity in a social network"
+subtitle: "A toy model idea"
+author: Tuan Pham 
+output:
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding,
+  output_dir = ".", output_format = "all") })
+---
+
+```{r echo=F}
+knitr::opts_chunk$set(
+  echo = F, eval = T,  
+  message=F, warning=F,
+  fig.align = "center")
+```
+
+```{r include=F}
+library(tidyverse)
+library(reshape2)
+library(purrr)
+
+library(bipartite)
+library(igraph)
+
+library(pbmcapply)
+
+source('src/topic_discovery.R')
+
+set.seed(3327) # for reproducibility of plotting + cluster assigments 
+```
+
+
+```{r}
+n_t <- 200
+n_a <- 100
+tau_0 <- 2
+setdiff_peropt <- TRUE
+
+
+# data_path <- 'data/params-and-models'
+
+```
+
+```{r}
+# only run the models of the same kind 
+model_generation_lists = list(
+  pa_0 = partial(sample_pa,power=0.5,directed=F),
+  pa_1 = partial(sample_pa,power=1.0,directed=F),
+  pa_2 = partial(sample_pa,power=2.0,directed=F),
+  pa_3 = partial(sample_pa,power=3.0,directed=F),
+  gnp_0 = partial(sample_gnp,p=0.01,directed=F), 
+  gnp_1 = partial(sample_gnp,p=0.1,directed=F), 
+  gnp_2 = partial(sample_gnp,p=0.2,directed=F)
+)
+
+all_modelgens <- names(model_generation_lists)
+
+param_df <- expand_grid(
+  p_alpha = c(0.1,0.3,0.5,0.7,0.9), 
+  tau_max = c(50, 100, 150), 
+  model_agent = all_modelgens,
+  model_topic = all_modelgens,
+  num_trials = 1:10
+) %>% filter(substr(model_agent, start = 1, stop = 2) == substr(model_topic, start = 1, stop = 2))
+param_df$ind <- 1:nrow(param_df)
+param_df
+
+run_params_config <- list(
+  general = list(n_t = n_t, n_a = n_a, tau_0 = tau_0, setdiff_peropt = setdiff_peropt),
+  params = param_df,
+  models = model_generation_lists)
+
+saveRDS(run_params_config, file.path(data_path, 'params.RData'))
+```
+
+
+```{r}
+param_df$ind %>% pbmclapply(function(comb_ind) {
+  data_file_name <- file.path(data_path, sprintf('data-%03d.RData', comb_ind))
+  model_gen <- list(
+    agent = model_generation_lists[[param_df[comb_ind,]$model_agent]],
+    topic = model_generation_lists[[param_df[comb_ind,]$model_topic]])
+  td <- TopicDiscovery$new(
+    n_a,
+    n_t,
+    param_df[comb_ind,]$p_alpha,
+    tau_max = param_df[comb_ind, ]$tau_max,
+    tau_0 = tau_0,
+    mdl_gen = model_gen
+  )
+  td$update_bipartite_topicagent(show_progress = F)
+  td$save_to_file(data_file_name)
+}, mc.cores = 6, mc.set.seed = T) %>% bind_rows()
+
+```
+
+
+---
+
+```{r test eval=F, include =F}
+td_demo <- TopicDiscovery$new(n_a, n_t, p_alpha, tau_max,tau_0 = tau_0,mdl_gen = mdl_gen)
+td_demo$update_bipartite_topicagent()
+td_demo$save_to_file('data/test/demo.RData')
+```
+
+
+---
+
+```{r}
+n_t <- 10
+n_a <- 5
+# n_t <- 1000
+# n_a <- 200
+p_alpha <- 0.7
+tau_max <- 20
+tau_0 <- 2
+setdiff_peropt <- TRUE
+mdl_gen <- list(
+  agent = partial(sample_pa,power=1.0,directed=F),
+  topic = partial(sample_pa,power=1.0,directed=F)
+)
+
+td <- TopicDiscovery$new(n_a, n_t, p_alpha, tau_max, tau_0 = tau_0, mdl_gen = mdl_gen, colors = T)
+```
+
+
+```{r}
+as_data_frame(G)
+```
+
+```{r}
+G <- td$G
+pseudo_cl <- make_clusters(G, membership = V(G)$role_id)
+layout <- layout_with_kk(G, weights=ifelse(crossing(pseudo_cl, G),2,1))
+
+plot(G, layout=layout,
+     vertex.size=15, vertex.frame.color = rgb(0,0,0,0), 
+     edge.curved=0.5, edge.width=1)
+```
+
+
+```{r}
+list_mats <- td$get_separate_matrices()
+list_mats
+colNorm((list_mats$TAU %*% list_mats$A - list_mats$TAU) > 0)
+
+```
+
+```{r}
+list_mats$T[c("t3","t7"),]
+list_mats$TAU[,c("a1","a3")]
+```
+
+```{r}
+ 1*(((list_mats$T %*% list_mats$TAU > 0) - list_mats$TAU) > 0) %>% colSums(.) 
+```
+
+```{r}
+abc <- td$p_alpha * colNorm( 1*(((list_mats$T %*% list_mats$TAU > 0) - list_mats$TAU) > 0)) +
+  td$p_beta *  colNorm( 1*(((list_mats$TAU %*% list_mats$A > 0) - list_mats$TAU) > 0))
+abc %>% melt(c("to","from")) %>% 
+  rename(prob=value) %>% 
+  filter(prob > 0) %>% 
+  group_by(from) %>% 
+  slice_sample(weight_by=prob) %>% 
+  select(to, from) 
+# list_mats$T %*% list_mats$TAU
+# list_mats$TAU %*% list_mats$A
+```
+
+
+```{r}
+max_iter <- 1000
+lapply(1:max_iter, function(.) {
+abc %>% melt(c("to","from")) %>% 
+  rename(prob=value) %>% 
+  filter(prob > 0) %>% 
+  group_by(from) %>% 
+  slice_sample(weight_by=prob) %>% 
+  select(to, from)
+}) %>% bind_rows() %>% 
+  group_by(from, to) %>% 
+  summarise(p = n()/max_iter) %>% 
+  spread(from, p) %>% as.matrix()
+  
+```
+
+---
+
+```{r}
+n_t <- 200
+n_a <- 100
+# n_t <- 1000
+# n_a <- 200
+p_alpha <- 0.7
+tau_max <- 50
+tau_0 <- 2
+setdiff_peropt <- TRUE
+mdl_gen <- list(
+  agent = partial(sample_pa,power=1.0,directed=F),
+  topic = partial(sample_pa,power=1.0,directed=F)
+)
+
+t0 <- Sys.time()
+
+td <- TopicDiscovery$new(n_a, n_t, p_alpha, tau_max, tau_0 = tau_0, mdl_gen = mdl_gen, colors = T)
+td$update_bipartite_topicagent(show_progress = T)
+
+t1 <- Sys.time()
+
+td <- TopicDiscovery$new(n_a, n_t, p_alpha, tau_max, tau_0 = tau_0, mdl_gen = mdl_gen, colors = T)
+td$update_via_matmul(show_progress = T)
+
+t2 <- Sys.time()
+
+list(update_bipartite_topicagent = t1 - t0, 
+     update_via_matmul = t2 - t1)
+```
+
+```{r}
+n_t <- 200
+n_a <- 100
+
+p_alpha <- 0.7
+tau_max <- 50
+tau_0 <- 2
+setdiff_peropt <- TRUE
+mdl_gen <- list(
+  agent = partial(sample_pa,power=1.0,directed=F),
+  topic = partial(sample_pa,power=1.0,directed=F)
+)
+
+param_df <- expand_grid(
+  p_alpha = c(0.1,0.3,0.5,0.7,0.9), 
+  num_trials = 1:10
+)
+
+param_df$ind <- 1:nrow(param_df)
+param_df
+
+mdl_gen <- list(
+  agent = partial(sample_pa,power=1.0,directed=F),
+  topic = partial(sample_pa,power=1.0,directed=F)
+)
+
+# param_df$ind %>% pbmclapply(function(comb_ind) {
+#   data_file_name <- file.path('data/test',
+#                               sprintf('update_bipartite_topicagent-%03d.RData', comb_ind))
+#   td <- TopicDiscovery$new(
+#     n_a,
+#     n_t,
+#     param_df[comb_ind,]$p_alpha,
+#     tau_max = tau_max,
+#     tau_0 = tau_0,
+#     mdl_gen = mdl_gen
+#   )
+#   td$update_bipartite_topicagent(show_progress = F)
+#   td$save_to_file(data_file_name)
+# }, mc.cores = 6, mc.set.seed = T) %>% bind_rows()
+
+
+param_df$ind %>% pbmclapply(function(comb_ind) {
+  data_file_name <- file.path('data/test', 
+                              sprintf('update_via_matmul-%03d.RData', comb_ind))
+  td <- TopicDiscovery$new(
+    n_a,
+    n_t,
+    param_df[comb_ind,]$p_alpha,
+    tau_max = tau_max,
+    tau_0 = tau_0,
+    mdl_gen = mdl_gen
+  )
+  td$update_via_matmul(show_progress = F)
+  td$save_to_file(data_file_name)
+}, mc.cores = 6, mc.set.seed = T) %>% bind_rows()
+
+```
+
+---
+
+```{r}
+n_t <- 1000
+n_a <- 500
+p_alpha <- 0.7
+tau_max <- 200
+tau_0 <- 2
+setdiff_peropt <- TRUE
+mdl_gen <- list(
+  agent = partial(sample_pa,power=0.5,directed=F),
+  topic = partial(sample_pa,power=0.5,directed=F)
+)
+
+t0 <- Sys.time()
+
+# td <- TopicDiscovery$new(n_a, n_t, p_alpha, tau_max, tau_0 = tau_0, mdl_gen = mdl_gen, colors = T)
+# td$update_bipartite_topicagent(show_progress = T)
+
+t1 <- Sys.time()
+
+td <- TopicDiscovery$new(n_a, n_t, p_alpha, tau_max, tau_0 = tau_0, mdl_gen = mdl_gen, colors = T)
+td$update_via_matmul(show_progress = T)
+
+t2 <- Sys.time()
+
+list(update_bipartite_topicagent = t1 - t0, 
+     update_via_matmul = t2 - t1)
+```
+
+```{r}
+df_edges <- as_data_frame(td$G)
+time_vec <- 1:td$max_nsteps
+topic_entropy <- lapply(time_vec, function(t_on) {
+  df_edges %>%
+    filter(onset <= t_on &
+             substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>%
+    select(to) %>% group_by(to) %>% summarise(count = length(to)) %>%
+    calc_entropy()
+}) %>% unlist
+
+topic_distmat <- induced_subgraph(td$G,filter_noderole(V(td$G), 'topics')$name) %>% distances(mode = 'all')
+  
+subdist <- lapply(time_vec, function(t_on) {
+  df_edges %>%
+    filter(onset <= t_on &
+             substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>% 
+    group_by(from) %>% 
+    summarise(d=mean(topic_distmat[to,to])) %>% 
+    select(d) %>% 
+    simplify2array %>%
+    mean
+}) %>% unlist()
+
+```
+
+```{r}
+ggpubr::ggarrange(
+  tibble(topic_entropy, t = time_vec) %>%
+    ggplot(aes(x = t,  y = topic_entropy)) +
+    geom_line(),
+  tibble(subdist, t = time_vec) %>%
+    ggplot(aes(x = t,  y = subdist)) +
+    geom_line(),
+  ncol = 2
+)
+
+```
+
+---
+
+
+```{r}
+calc_entropy <- function(df) {
+  total_occ <- sum(df$count)
+  
+  mutate(df, p = count/total_occ) %>% 
+    mutate(p = -p*log(p,base=2)) %>% 
+    filter(!is.nan(p)) %>% 
+    select(p) %>% sum
+}
+
+all_ents <- param_df$ind %>% lapply(function(comb_ind) {
+  td <- readRDS(sprintf('data/test/demo-%03d.RData',comb_ind))
+  df_edges <- as_data_frame(td$G)
+  time_vec <- 1:td$max_nsteps
+  topic_entropy <- lapply(time_vec, function(t_on) {
+    df_edges %>%
+      filter(onset <= t_on &
+               substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>%
+      select(to) %>% group_by(to) %>% summarise(count = length(to)) %>%
+      calc_entropy()
+  }) %>% unlist
+  tibble(topic_entropy, t = time_vec, param_df[comb_ind,])
+}) %>% bind_rows()
+
+
+param_df <- expand_grid(
+  p_alpha = c(0.1,0.5,0.9), 
+  num_trials = 1:5
+)
+param_df$ind <- 1:nrow(param_df)
+
+all_sub <- param_df$ind %>% lapply(function(comb_ind) {
+  td <- readRDS(sprintf('data/test/demo-%03d.RData',comb_ind))
+  df_edges <- as_data_frame(td$G)
+  time_vec <- seq(from=1,to=td$max_nsteps,by=5)
+  topic_distmat <- induced_subgraph(td$G,filter_noderole(V(td$G), 'topics')$name) %>% distances(mode = 'all')
+  
+  subdist <- lapply(time_vec, function(t_on) {
+    df_edges %>%
+      filter(onset <= t_on &
+               substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>% 
+      group_by(from) %>% 
+      summarise(d=mean(topic_distmat[to,to])) %>% 
+      select(d) %>% 
+      simplify2array %>%
+      mean
+  }) %>% unlist
+  tibble(subdist, t = time_vec, param_df[comb_ind,])
+}) %>% bind_rows()
+
+```
+
+```{r}
+td <- readRDS(sprintf('data/test/demo-%03d.RData',1))
+df_edges <- as_data_frame(td$G)
+td$tau_max
+```
+
+```{r}
+filter_noderole(V(td$G), 'agents')$name
+```
+
+```{r}
+topic_distmat[c('t1','t2','t3'),c('t1','t3','t5')]
+```
+
+```{r}
+topic_distmat <- induced_subgraph(td$G,filter_noderole(V(td$G), 'topics')$name) %>% distances(mode = 'all')
+# image(topic_distmat)
+topic_distmat
+```
+
+```{r}
+df_edges %>% filter(onset <= td$max_nsteps &
+                      substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>% 
+  group_by(from) %>% summarise(n=mean(topic_distmat[to,to])) %>% select(n) %>% simplify2array %>% mean
+```
+
+
+```{r}
+z_err <- 1
+name_of_Y <- 'topic_entropy'
+all_ents %>%
+  mutate(Y = !!sym(name_of_Y), p_a = factor(p_alpha)) %>%
+  group_by(t, p_a) %>%
+  summarize(
+    mean = mean(Y),
+    sd   = sd(Y),
+    upp = mean + z_err * sd,
+    low = mean - z_err * sd
+  ) %>%
+  ungroup() %>%
+  ggplot(aes(x = t,  color = p_a, fill = p_a)) +
+  geom_ribbon(aes(ymin = low, ymax = upp), alpha = 0.1) +
+  labs(title = name_of_Y) + 
+  geom_line(aes(y = mean))
+```
+
+```{r}
+z_err <- 1
+name_of_Y <- 'subdist'
+all_sub %>%
+  mutate(Y = !!sym(name_of_Y), p_a = factor(p_alpha)) %>%
+  group_by(t, p_a) %>%
+  summarize(
+    mean = mean(Y),
+    sd   = sd(Y),
+    upp = mean + z_err * sd,
+    low = mean - z_err * sd
+  ) %>%
+  ungroup() %>%
+  ggplot(aes(x = t,  color = p_a, fill = p_a)) +
+  geom_ribbon(aes(ymin = low, ymax = upp), alpha = 0.1) +
+  labs(title = name_of_Y) + 
+  geom_line(aes(y = mean))
+```
+
+
+
+```{r}
+param_df <- expand_grid(
+  p_alpha = c(0.1,0.3,0.5,0.7,0.9), 
+  num_trials = 1:10
+)
+
+param_df$ind <- 1:nrow(param_df)
+
+all_ents <- param_df$ind %>% lapply(function(comb_ind) {
+  td <- readRDS(sprintf('data/test/update_via_matmul-%03d.RData',comb_ind))
+  df_edges <- as_data_frame(td$G)
+  time_vec <- 1:td$max_nsteps
+  topic_entropy <- lapply(time_vec, function(t_on) {
+    df_edges %>%
+      filter(onset <= t_on &
+               substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>%
+      select(to) %>% group_by(to) %>% summarise(count = length(to)) %>%
+      calc_entropy()
+  }) %>% unlist
+  tibble(topic_entropy, t = time_vec, param_df[comb_ind,])
+}) %>% bind_rows()
+
+
+all_sub <- param_df$ind %>% lapply(function(comb_ind) {
+  td <- readRDS(sprintf('data/test/update_via_matmul-%03d.RData',comb_ind))
+  df_edges <- as_data_frame(td$G)
+  time_vec <- seq(from=1,to=td$max_nsteps,by=5)
+  topic_distmat <- induced_subgraph(td$G,filter_noderole(V(td$G), 'topics')$name) %>% distances(mode = 'all')
+  
+  subdist <- lapply(time_vec, function(t_on) {
+    df_edges %>%
+      filter(onset <= t_on &
+               substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>% 
+      group_by(from) %>% 
+      summarise(d=mean(topic_distmat[to,to])) %>% 
+      select(d) %>% 
+      simplify2array %>%
+      mean
+  }) %>% unlist
+  tibble(subdist, t = time_vec, param_df[comb_ind,])
+}) %>% bind_rows()
+
+z_err <- 1
+name_of_Y <- 'topic_entropy'
+all_ents %>%
+  mutate(Y = !!sym(name_of_Y), p_a = factor(p_alpha)) %>%
+  group_by(t, p_a) %>%
+  summarize(
+    mean = mean(Y),
+    sd   = sd(Y),
+    upp = mean + z_err * sd,
+    low = mean - z_err * sd
+  ) %>%
+  ungroup() %>%
+  ggplot(aes(x = t,  color = p_a, fill = p_a)) +
+  geom_ribbon(aes(ymin = low, ymax = upp), alpha = 0.1) +
+  labs(title = name_of_Y) + 
+  geom_line(aes(y = mean))
+
+z_err <- 1
+name_of_Y <- 'subdist'
+all_sub %>%
+  mutate(Y = !!sym(name_of_Y), p_a = factor(p_alpha)) %>%
+  group_by(t, p_a) %>%
+  summarize(
+    mean = mean(Y),
+    sd   = sd(Y),
+    upp = mean + z_err * sd,
+    low = mean - z_err * sd
+  ) %>%
+  ungroup() %>%
+  ggplot(aes(x = t,  color = p_a, fill = p_a)) +
+  geom_ribbon(aes(ymin = low, ymax = upp), alpha = 0.1) +
+  labs(title = name_of_Y) + 
+  geom_line(aes(y = mean))
+```
+
+```{r}
+
+param_df <- expand_grid(
+  p_alpha = c(0.1,0.5,0.9), 
+  num_trials = 1:5
+)
+param_df$ind <- 1:nrow(param_df)
+
+all_ents <- param_df$ind %>% lapply(function(comb_ind) {
+  td <- readRDS(sprintf('data/test/update_bipartite_topicagent-%03d.RData',comb_ind))
+  df_edges <- as_data_frame(td$G)
+  time_vec <- 1:td$max_nsteps
+  topic_entropy <- lapply(time_vec, function(t_on) {
+    df_edges %>%
+      filter(onset <= t_on &
+               substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>%
+      select(to) %>% group_by(to) %>% summarise(count = length(to)) %>%
+      calc_entropy()
+  }) %>% unlist
+  tibble(topic_entropy, t = time_vec, param_df[comb_ind,])
+}) %>% bind_rows()
+
+
+
+
+all_sub <- param_df$ind %>% lapply(function(comb_ind) {
+  td <- readRDS(sprintf('data/test/update_bipartite_topicagent-%03d.RData',comb_ind))
+  df_edges <- as_data_frame(td$G)
+  time_vec <- seq(from=1,to=td$max_nsteps,by=5)
+  topic_distmat <- induced_subgraph(td$G,filter_noderole(V(td$G), 'topics')$name) %>% distances(mode = 'all')
+  
+  subdist <- lapply(time_vec, function(t_on) {
+    df_edges %>%
+      filter(onset <= t_on &
+               substr(from, start = 1, stop = 1) != substr(to, start = 1, stop = 1)) %>% 
+      group_by(from) %>% 
+      summarise(d=mean(topic_distmat[to,to])) %>% 
+      select(d) %>% 
+      simplify2array %>%
+      mean
+  }) %>% unlist
+  tibble(subdist, t = time_vec, param_df[comb_ind,])
+}) %>% bind_rows()
+
+z_err <- 1
+name_of_Y <- 'topic_entropy'
+all_ents %>%
+  mutate(Y = !!sym(name_of_Y), p_a = factor(p_alpha)) %>%
+  group_by(t, p_a) %>%
+  summarize(
+    mean = mean(Y),
+    sd   = sd(Y),
+    upp = mean + z_err * sd,
+    low = mean - z_err * sd
+  ) %>%
+  ungroup() %>%
+  ggplot(aes(x = t,  color = p_a, fill = p_a)) +
+  geom_ribbon(aes(ymin = low, ymax = upp), alpha = 0.1) +
+  labs(title = name_of_Y) + 
+  geom_line(aes(y = mean))
+
+z_err <- 1
+name_of_Y <- 'subdist'
+all_sub %>%
+  mutate(Y = !!sym(name_of_Y), p_a = factor(p_alpha)) %>%
+  group_by(t, p_a) %>%
+  summarize(
+    mean = mean(Y),
+    sd   = sd(Y), 
+    upp = mean + z_err * sd,
+    low = mean - z_err * sd
+  ) %>%
+  ungroup() %>%
+  ggplot(aes(x = t,  color = p_a, fill = p_a)) +
+  geom_ribbon(aes(ymin = low, ymax = upp), alpha = 0.1) +
+  labs(title = name_of_Y) + 
+  geom_line(aes(y = mean))
+
+```
+
+---
+
+
+```{r}
+g <- barabasi.game(10000, power=0.1, directed = F) # increase this number to have a better estimate
+d <- degree(g, mode = 'all')
+fit1 <- fit_power_law(d+1, 1)
+
+dg_di <- degree_distribution(g, cumulative = FALSE, mode = c("total"))
+fit2 <- dg_di %>%  fit_power_law(implementation = c("plfit"), force.continuous = FALSE)
+
+fit1$alpha
+
+fit2$alpha
+```
+
+
+```{r}
+# https://chengjunwang.com/web_data_analysis/demo2_simulate_networks/
+fit_power_law2 = function(graph) {
+    # calculate degree
+    d = degree(graph, mode = "all")
+    dd = degree.distribution(graph, mode = "all", cumulative = FALSE)
+    degree = 1:max(d)
+    probability = dd[-1]
+    # delete blank values
+    nonzero.position = which(probability != 0)
+    probability = probability[nonzero.position]
+    degree = degree[nonzero.position]
+    reg = lm(log(probability) ~ log(degree))
+    cozf = coef(reg)
+    power.law.fit = function(x) exp(cozf[[1]] + cozf[[2]] * log(x))
+    alpha = -cozf[[2]]
+    R.square = summary(reg)$r.squared
+    # print(paste("Alpha =", round(alpha, 3)))
+    # print(paste("R square =", round(R.square, 3)))
+    # # plot
+    # plot(probability ~ degree, log = "xy", xlab = "Degree (log)", ylab = "Probability (log)", 
+    #     col = 1, main = "Degree Distribution")
+    # curve(power.law.fit, col = "red", add = T, n = length(d))
+    return(alpha)
+}
+
+
+
+plot_degree_distribution = function(graph) {
+    # calculate degree
+    d = degree(graph, mode = "all")
+    dd = degree.distribution(graph, mode = "all", cumulative = FALSE)
+    degree = 1:max(d)
+    probability = dd[-1]
+    # delete blank values
+    nonzero.position = which(probability != 0)
+    probability = probability[nonzero.position]
+    degree = degree[nonzero.position]
+    # plot
+    plot(probability ~ degree, log = "xy", xlab = "Degree (log)", ylab = "Probability (log)", 
+        col = 1, main = "Degree Distribution")
+}
+
+# 
+# g <- barabasi.game(1000, power=1, directed = F) 
+# plot_degree_distribution(g)
+# fit_power_law2(g)
+
+powers_ba <- seq(from=0.1, to=2, by=0.1) 
+fitted_powers <- powers_ba%>% sapply(function(p){
+   sample_pa(200, power=p, m=1,directed = F) %>% fit_power_law2
+})
+
+tibble(p=powers_ba, a=fitted_powers) %>% 
+  ggplot(aes(x=p,y=a)) + geom_point() + geom_line()
+
+# plot( barabasi.game(100, power=1, m=2,directed = F), layout=layout_with_kk, )
+
+```

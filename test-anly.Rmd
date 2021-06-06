@@ -286,3 +286,30 @@ analysis_pertime <- lapply(time_vec, function(t_on) {
 }) %>% bind_rows
 ```
 
+```{r}
+# test_file <- sprintf('data/nonblock-models/data-%06d.rds', 431)
+test_file <- sprintf('data/block-models/data-%06d.rds', 100)
+td <- readRDS(test_file)
+info <- td$info
+info
+```
+
+```{r}
+
+options(dplyr.summarise.inform = FALSE)
+t0 <- Sys.time()
+samp_time <- -1 # only initial and last
+analysis_function <- analyze_diversity
+analysis_arguments <- list(nrep_2ndextinct = 2)
+
+anly_div_time <- analysis_through_time(td, samp_time = samp_time,
+                                       analysis_function, analysis_arguments = analysis_arguments)
+
+
+
+anly_div_time
+
+```
+
+
+

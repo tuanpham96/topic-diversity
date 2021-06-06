@@ -1,0 +1,132 @@
+---
+title: "Variations of parameters p_alpha and running SBM models"
+subtitle: "SF via sample_pa, ER via gnp"
+author: Tuan Pham 
+output:
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding,
+  output_dir = ".", output_format = "all") })
+---
+
+```{r echo=F}
+knitr::opts_chunk$set(
+  echo = F, eval = T,  
+  message=F, warning=F,
+  fig.align = "center")
+```
+
+```{r include=F}
+library(tidyverse)
+library(reshape2)
+library(purrr)
+
+library(bipartite)
+library(igraph)
+
+library(pbmcapply)
+library(gtools)
+
+source('src/topic_discovery.R')
+
+set.seed(3327) # for reproducibility of plotting + cluster assigments 
+```
+
+
+```{r}
+n_t <- 1000
+n_a <- 200
+tau_0 <- 2
+tau_max <- 100
+setdiff_peropt <- TRUE
+
+data_path <- 'data/params-and-blocks'
+
+```
+
+```{r}
+# custom function to generate partial functions for SBM model
+make_sbmgen_partial <- function(num_vertices, num_blocks, p_within, p_between) {
+  P <- matrix(rep(p_between,num_blocks^2), num_blocks, num_blocks)
+  diag(P) <- p_within
+  per_block_size <- round(num_vertices/num_blocks)
+  block_sizes <- rep(per_block_size, num_blocks)
+  block_sizes[num_blocks] <- num_vertices - (num_blocks - 1) * per_block_size
+  return(sample_sbm(num_vertices, pref.matrix=P, block.sizes=block_sizes, directed = FALSE, loops = FALSE))
+}
+```
+
+
+```{r}
+# models functions
+model_generation_lists = list(
+  sf = partial(sample_pa,power=1,directed=F),
+  sbm_1 = partial(make_sbmgen_partial,num_blocks=10,p_within=0.1,p_between=0.001),
+  sbm_2 = partial(make_sbmgen_partial,num_blocks=10,p_within=0.1,p_between=0.01),
+  sbm_3 = partial(make_sbmgen_partial,num_blocks=10,p_within=0.1,p_between=0.05)
+)
+
+all_modelgens <- names(model_generation_lists)
+
+# create parameters data frame
+param_df <- expand_grid(
+  p_alpha = c(0.1, 0.3, 0.5, 0.7, 0.9), 
+  model_agent = all_modelgens,
+  model_topic = all_modelgens,
+  num_trials = 1:20
+) 
+param_df$ind <- 1:nrow(param_df)
+param_df
+
+# save parameters 
+run_params_config <- list(
+  general = list(n_t = n_t, n_a = n_a, 
+                 tau_0 = tau_0, tau_max = tau_max, 
+                 setdiff_peropt = setdiff_peropt),
+  params = param_df,
+  models = model_generation_lists)
+  
+saveRDS(run_params_config, file.path(data_path, 'params.RData'))
+
+```
+
+
+```{r}
+cur_data <- list.files(path = data_path, pattern = 'data.*\\.RData$') %>% c
+cur_ind <- regmatches(cur_data, gregexpr("[[:digit:]]+", cur_data)) %>% as.numeric()
+remainder_ind <- setdiff(param_df$ind, cur_ind)
+remainder_ind
+length(remainder_ind)
+```
+
+```{r}
+# indlist_to_run <- remainder_ind # when interrupted or restart
+indlist_to_run <- param_df$ind
+```
+
+```{r}
+run_model_each <- function(comb_ind) {
+  data_file_name <- file.path(data_path, sprintf('data-%06d.RData', comb_ind))
+  model_gen <- list(
+    agent = model_generation_lists[[param_df[comb_ind,]$model_agent]],
+    topic = model_generation_lists[[param_df[comb_ind,]$model_topic]])
+  td <- TopicDiscovery$new(
+    n_a,
+    n_t,
+    param_df[comb_ind,]$p_alpha,
+    tau_max = tau_max,
+    tau_0 = tau_0,
+    mdl_gen = model_gen
+  )
+  td$update_via_matmul(show_progress = F)
+  td$save_to_file(data_file_name)
+}
+
+pbmclapply(indlist_to_run, run_model_each,
+           mc.cores = 6, 
+           mc.set.seed = TRUE,
+           mc.preschedule	= TRUE)
+
+```
+
+
+

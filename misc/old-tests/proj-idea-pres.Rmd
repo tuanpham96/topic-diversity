@@ -1,0 +1,259 @@
+---
+title: "Topic/knowledge discovery and diversity in a social network - a toy idea"
+subtitle: "Project idea presentation"
+author: Tuan Pham 
+output:
+  revealjs::revealjs_presentation: 
+    fig_caption: yes
+    center: false
+    css: 'resources/styles.css'
+    highlight: zenburn
+    self_contained: true
+    includes:
+      in_header: 'resources/header.html'
+      before_body: 
+      after_body: 
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding,
+  output_dir = "docs", output_format = "all") })
+---
+
+```{r echo=F}
+knitr::opts_chunk$set(
+  echo = F, eval = T,  
+  message=F, warning=F,
+  fig.align = "center")
+```
+
+```{r include=F}
+library(tidyverse)
+library(reshape2)
+
+library(bipartite)
+library(igraph)
+
+library(networkD3)
+
+source('src/utils.R')
+set.seed(3327) # for reproducibility of plotting + cluster assigments 
+```
+
+
+# Introduction of notation
+
+- General notations:
+  - *BUAnl*: binary undirected adjacency matrix without self loop
+  - **Agent** graph $\mathcal{A}$ of size $n$, with *BUAnl* $\mathbf{A}$
+  - **Topic** graph $\mathcal{T}$ of size $m$, with *BUAnl* $\mathbf{T}$
+  - Define $\tau(a_i)$ as the topics in $V(\mathcal{T})$ that agent $a_i$ knows or has learnt
+  - Define $\mathcal{N}(v)$ as direct neighbors of node $v$ 
+  - Define $\mathcal{U}(X)$ as choosing randomly from minimal set $X$ 
+  
+- "Dynamic" process of learning new topics:
+  0. Initial conditions, pick $\tau_0$ from $|V(\mathcal{T})|$ topics $\to \tau(a_i)$
+  1. With prob $\color{blue}{\alpha}$, $a_i$ learns about the topics related to the known topics $\tau(a_i)$
+  2. With prob $\color{red}{\beta}$, $a_i$ learns about the topics from the friends of $a_i$ (i.e. $\mathcal{N}(a_i)$)
+  3. Otherwise, or when $|\tau(a_i)| = \tau_{\mathrm{max}}$, $a_i$ doesn't learn anything new (refinement of knowledge maybe) 
+  
+## Constraints and variations 
+
+- The parameter space first includes $(m,n) \times (\alpha,\beta) \times (\tau_0, \tau_{\mathrm{max}})$. 
+  - $m \gg n$. Intend to set $m \in \{500,1000\}, n \in \{50, 100\}$ 
+  - If we assume $\alpha + \beta = 1$ then $(\alpha,\beta) \to \alpha$. Maybe also assume $\alpha > 0.5$ (learning from related topic is "easier" and "faster" )
+  - Choices of $(\tau_0, \tau_{\mathrm{max}})$ may depend on sizes of graphs, for now maybe use $(\{5,10\},\{20,50\})$
+  - A possible way to initialize $\tau(a_i)$ is to choose more preferentially the central nodes in the topic graphs instead of completely random (will not do for simplicity)
+  - Not considered: a small probability to update topics from neither cases ("serendipity") or remove topics ("forgetting")
+
+- Model building: 
+  - Currently considering BA scale free networs
+  - May later consider other networks like ER, block models, disconnected graphs 
+  - Though not in the scope, an empirical $\mathcal{T}$ can be the Wikipedia web, and $\mathcal{T}$ as some social network (like Facebook, Twitter, university alumni network)
+
+
+## The update process of learnt topics
+
+- Define $\Delta X$ as the *minimal* (no duplicate) update "derivative" for set $X$, i.e. 
+$$X \leftarrow X \bigcup \Delta X$$
+
+- Then we define the process of learning new topics via $\Delta \tau(a_i)$
+\begin{align*}
+\text{new topic} &= 
+  \color{blue}{\text{topics related to the known topics}} 
+  \text{ or }
+  \color{red}{\text{learnt from friends}} \\ 
+\Delta \tau(a_i) &= 
+   \Big(
+  \color{blue} {
+    \alpha \cdot \mathcal{U} \left[ 
+    \mathcal{N}\left(\tau(a_i)\right) 
+  \right]} \bigcup
+  \color{red} {
+  \beta \cdot \mathcal{U} \left[
+    \tau\left(\mathcal{U}\left[\mathcal{N}(a_i)\right]\right)  
+  \right]}\Big)
+  \color{grey}{\setminus \tau(a_i)} \\
+  & \text{ or more strictly }\\
+    &= 
+   \color{blue} {
+    \alpha \cdot \mathcal{U} \left[ 
+    \mathcal{N}\left(\tau(a_i)\right) 
+    \color{gray} {\setminus \tau(a_i)}
+  \right]} \bigcup
+  \color{red} {
+    \beta \cdot \mathcal{U} \left[
+    \tau\left(\mathcal{U}\left[\mathcal{N}(a_i)\right]\right) 
+    \color{gray} {\setminus \tau(a_i)}
+    \right] 
+  } 
+\end{align*}
+
+--- 
+
+- A possible matrix representation (work-in-progress, unclear how to define $\sigma, F, G$ yet). Instead of defining ${\Large\tau}$ as a set, we can define it as a bipartite graph between the agent graph to the topic graph, of size $m \times n$. Still figuring out whether this should be a probability matrix or 
+$$
+  {\Large\tau} \propto \sigma\Big[
+  \color{blue}{\text{F}(\alpha \mathbf{T} {\Large\tau})}
+    +
+  \color{red}{\text{G}(\beta {\Large\tau} \mathbf{A})}
+  \Big]
+$$
+Possibly with $\phi(\mathbf{M}) = \frac{\mathbf{M}}{\mathrm{colsum} \mathbf{M}}$ so that each column is normalized to sum to 1. Define $f: \mathbf{P} \mapsto \alpha\phi(\mathbf{TP}) + \beta\phi(\mathbf{PA})$. Perhaps after a long time it converges, then choose the highest $\tau_{\mathrm{max}}$ elements in each column of $\mathbf{P}$ to obtain a version of ${\Large\tau}$. But this still seems insufficient. 
+
+
+# Demo 
+
+```{r echo = T}
+n_t <- 10
+n_a <- 5
+tau_max <- 5
+tau_0 <- 1
+p_alpha <- 0.7
+p_beta <- 0.3
+setdiff_peropt <- TRUE
+max_nsteps <- 10
+```
+
+
+```{r }
+colors <- list(agent_vert = rgb(1,0,0,0.8), topic_vert = rgb(0.1,0.2,0.9,0.8), 
+               agent_edge = rgb(1,0,0,0.6), topic_edge = rgb(0.1,0.2,0.9,0.6), 
+               init_cross = rgb(0,0,0,0.3), new_cross = rgb(0.3,0.7,0.3,0.8))
+```
+
+```{r}
+G <- initialize_unipartite(n_a,n_t,tau_0)
+```
+
+```{r include=F}
+pseudo_cl <- make_clusters(G, membership = V(G)$role_id)
+layout <- layout_with_kk(G, weights=ifelse(crossing(pseudo_cl, G),4,1))
+
+plot(G, layout=layout, vertex.size=10, vertex.frame.color = rgb(0,0,0,0), 
+    edge.curved=0.05, edge.width=3)
+```
+
+<!-- ## Initial net  -->
+
+
+```{r}
+qickplot_d3forcenet <- function(G, plot_height=500, plot_width=900) {
+  d3_color_scale  <- sprintf("d3.scaleOrdinal().domain(['agents','topics']).range(['%s','%s'])",
+                             colors$agent_vert, colors$topic_vert)
+  G_d3 <- igraph_to_networkD3(graph.data.frame(as_data_frame(G) %>% select(from, to, color), 
+                                               vertices = as_data_frame(G, 'vertices'), 
+                                               directed = F), 
+                              group = V(G)$role)
+  forceNetwork(Links = G_d3$links, Nodes = G_d3$nodes, 
+               Source = 'source', Target = 'target', 
+               NodeID = 'name', Group = 'group', charge=-500,
+               colourScale = JS(d3_color_scale),
+               linkColour = G_d3$links$value, linkWidth = 3, linkDistance = 10, 
+               fontFamily = 'FreeSans', fontSize = 20, height=plot_height, width=plot_width, 
+               zoom = F, bounded = F, legend = T, 
+               opacityNoHover = 0.9, opacity= 0.8) 
+}
+```
+
+
+```{r}
+qickplot_d3forcenet(G, plot_height = 400)
+```
+
+## Update by $\color{blue}{\alpha}$ route, through related topics
+
+
+```{r fig.cap='Add `t6` to `a1` (green) via `t7`'}
+# using route alpha 
+aoi <- "a1"
+new_topic_of_aoi <- update_learnt_topics(G, aoi, p_alpha=1, p_beta=0, tau_max, setdiff_peropt)
+G_new <- add_edges(G, c(aoi, new_topic_of_aoi)) 
+E(G_new)$color[is.na(E(G_new)$color)] = colors$new_cross
+
+qickplot_d3forcenet(G_new) 
+```
+
+## Updates by the $\color{red}{\beta}$ route, learning through friends
+
+```{r fig.cap='Add `t3` to `a1` (green) via `a2`'} 
+# using route alpha 
+aoi <- "a1"
+new_topic_of_aoi <- update_learnt_topics(G, aoi, p_alpha=0, p_beta=1, tau_max, setdiff_peropt)
+G_new <- add_edges(G, c(aoi, new_topic_of_aoi)) 
+E(G_new)$color[is.na(E(G_new)$color)] = colors$new_cross
+
+qickplot_d3forcenet(G_new)
+```
+
+
+## Run for 10 times
+
+```{r fig.cap='Green edges represent learnt topics, with maximum capacity 5 per agent'}
+agents_nodes <- filter_noderole(V(G),"agents")$name
+for (ni in 1:max_nsteps) {
+  all_new_topics <- sapply(agents_nodes, function(aoi) {
+    update_learnt_topics(G, aoi, p_alpha, p_beta, tau_max, setdiff_peropt)
+  })
+  
+  new_topics_df <- all_new_topics[!is.na(all_new_topics)] %>%
+    data.frame() %>% rename(to=".") %>% rownames_to_column(var="from")
+  
+  edge_seq <- new_topics_df %>% as.matrix() %>% t %>% as.vector()
+  G <- add_edges(G, edge_seq)
+}
+
+E(G)$color[is.na(E(G)$color)] <- colors$new_cross
+qickplot_d3forcenet(G)
+```
+
+
+# Quantifications 
+
+- The entropy and redundancy of topics per agent and across agents
+- The maximum number of topics recovered from the agents, and the number of time steps taken to achieve such
+- Modularity of the bipartite network ${\Large\tau}$ and the projected networks, compared with the original $\mathcal{A}, \mathcal{T}$ networks. 
+
+
+## Further details and brainstorming 
+
+- General query:
+  - `p_alpha`, `tau_max` (update parameters)
+  - `BA`,`ER` model + their params (`power`, `m`, `p`)
+  - Query `SBM` with 4 or 10 modules
+- **Diversity of topics**:
+  - Of population:
+    - Entropy of population topics
+    - Number of topics learnt in total
+    - Robustness: delete an agent at random or ranked with centrality, and ask how those 2 change
+  - Individual: *Do I learn new things out of my comfort zone?*
+    - Average shortest paths of subgraphs from learnt topics
+    - Average overlap of learnt topics between agents (and between neighbors)
+
+---
+
+- Difference between topic graph $\mathcal{T}$ and projected topic graph ${\Large\tau\tau}^T$
+  - Degree/centrality distribution: *whether obscure topics are now easily "picked up"*
+  - Clustering coefficient
+- Nestedness of bipartite graph: *the tendency for formation of "specialists" and "generalists"* in the agent population
+- Modularity:
+  - Design modules in either or both graphs, test diversity again
+  - For module model in topic graph, test whether projected topic graph decreases modularity

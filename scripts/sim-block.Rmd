@@ -88,7 +88,6 @@ sim_params_config <- list(
   
 saveRDS(sim_params_config, file.path(data_path, 'params.rds'))
 
-
 ```
 
 ```{r}

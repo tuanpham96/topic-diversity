@@ -3,6 +3,52 @@ library(reshape2)
 library(bipartite)
 library(igraph)
 
+analysis_through_time <- function(td, samp_time = -1,
+                                  analysis_function, analysis_arguments = list(),
+                                  bind_info = TRUE) {
+  # samp_time: sampling time 
+  #   (`samp_time < 1`) or (`samp_time >= td$max_nsteps`): only use `t_onset = {0, td$max_nsteps}`
+  #   otherwise subsampled using the given `samp_time` using`seq(from = 0, to = td$max_nsteps, by = samp_time)`
+  
+  label_list <- list()
+  
+  # parse sampling time 
+  if ((samp_time < 1) | (samp_time >= td$max_nsteps)) {
+    time_vec <- c(0, td$max_nsteps)
+  }
+  else {
+    time_vec <- seq(from = 0, to = td$max_nsteps, by = samp_time)
+  }
+
+  # perform analysis by filtering the "onset" field in the edges data frames of the graph `td$G`
+  time_analysis_df <- lapply(time_vec, function(t_on) {
+    td_sub <- td$clone(deep = TRUE)
+    
+    td_sub$G <- graph.data.frame(
+      as_data_frame(td_sub$G, 'edges') %>% filter(onset <= t_on),
+      directed = FALSE,
+      vertices = as_data_frame(td_sub$G, 'vertices')
+    )
+    
+    div_metric_sub <- do.call(analysis_function, c(list(td = td_sub), analysis_arguments))
+    
+    if (length(label_list) == 0) {
+      label_list <-  div_metric_sub$labels
+    }
+    
+    return(div_metric_sub$values %>% as_tibble() %>% mutate(t = t_on))
+    
+  }) %>% bind_rows()
+
+  
+  if (bind_info) {
+    time_analysis_df <- time_analysis_df %>% bind_cols(td$info)
+  }
+  
+  return(list(df = time_analysis_df, label = label_list))
+}
+
+
 analyze_diversity <- function(td, nrep_2ndextinct=5) {
   
   calculate_entropy <- purrr::partial(vegan::diversity, index='shannon',  base = 2)
@@ -83,7 +129,7 @@ analyze_diversity <- function(td, nrep_2ndextinct=5) {
       group_by(agent) %>% 
       summarise(ent = calculate_entropy(count))
     
-    value_list$H_gi <- mean(peragent_topicgroupentropy$ent)
+    value_list$H_gi <- mean(peragent_topicgroupentropy$ent, na.rm = TRUE)
   } 
   
   # evenness 
@@ -150,20 +196,23 @@ analyze_diversity <- function(td, nrep_2ndextinct=5) {
       n_cc = components(induced_subgraph(td$G, topic))$no
     ) %>%
     select(-agent) %>% 
-    summarise_all(
-      list(mean=mean,
-           med=median,
-           sd=sd,
-           skew=moments::skewness)
-      ) %>% 
+    summarise_all(list(
+      mean=partial(mean, na.rm=TRUE),
+      med = partial(median, na.rm = TRUE),
+      sd = partial(sd, na.rm = TRUE),
+      skew = partial(moments::skewness, na.rm = TRUE))
+    ) %>% 
     as.list()
   
   value_list <- c(value_list, substats_values)
   
   # Jaccard similarity list of topics between agents
   label_list$Js_T <- 'mean pairwise Jaccard similarity of topics between agents'
+  
+  sink("/dev/null") # the following function outputs some messages, best to suppress
   Js_pw <- jacpop::generate_pw_jaccard(t(all_mats$TAU), n.pcs = NULL, plot_it = FALSE)$Jac
   value_list$Js_T <- mean(Js_pw[upper.tri(Js_pw)], na.rm = TRUE)
+  sink()
   
   return(list(
     labels = label_list,

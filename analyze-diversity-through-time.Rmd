@@ -1,0 +1,96 @@
+---
+title: "Run analysis scripts for diversity analysis through time" 
+---
+
+```{r message=F}
+library(tidyverse)
+library(reshape2)
+library(purrr)
+
+library(bipartite)
+library(igraph)
+
+library(pbmcapply)
+library(magrittr)
+
+library(microbiome)
+library(moments)
+
+source('src/topic_discovery.R')
+source('src/topic_analysis.R')
+
+
+# suppress `summarise` mesages
+# from: https://rstats-tips.net/2020/07/31/get-rid-of-info-of-dplyr-when-grouping-summarise-regrouping-output-by-species-override-with-groups-argument/
+options(dplyr.summarise.inform = FALSE) 
+
+set.seed(2802) # for reproducibility of plotting + cluster assigments 
+```
+
+```{r}
+# analysis parameters 
+samp_time <- 10
+anly_func <- analyze_diversity
+anly_args <- list(nrep_2ndextinct = 3)
+```
+
+
+```{r}
+data_paths <- c('data/nonblock-models/', 'data/block-models/')
+nworkers <- round(parallel::detectCores()/2)
+```
+
+
+```{r}
+for (data_path in data_paths) {
+  # get parameter file and param_df 
+  param_file <- file.path(data_path, 'params.rds')
+  param_data <- readRDS(param_file)
+  param_df <- param_data$params
+  indlist_to_run <- param_df$ind
+  
+  # function to run analysis
+  run_analysis_each <- function(comb_ind) {
+    sim_param <- param_df[comb_ind,]
+    data_file_name <- sim_param$data_file
+    proc_file_name <- sim_param$proc_file
+    
+    # load data
+    td <- readRDS(data_file_name)
+    
+    # analyze and save to list 
+    anly_div_time <- analysis_through_time(
+      td,
+      samp_time = samp_time,
+      analysis_function = anly_func,
+      analysis_arguments = anly_args
+    )
+    
+    analysis_data <- list(
+      diversity = anly_div_time,
+      info = sim_param
+    )
+    
+    # save to proc file
+    saveRDS(analysis_data, file = proc_file_name)
+    
+  }
+  
+  # now run using parallel
+  pbmclapply(
+    indlist_to_run,
+    run_analysis_each,
+    mc.cores = nworkers,
+    mc.set.seed = TRUE,
+    mc.preschedule	= TRUE,
+    ignore.interactive = TRUE
+  ) %>% invisible()
+  
+  remove(param_df) # just to be safe
+}
+
+
+```
+
+
+
