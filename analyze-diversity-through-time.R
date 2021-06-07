@@ -35,7 +35,8 @@ anly_args <- list(nrep_robustness = 5)
 
 ## -------------------------------------------------------------------------------------------------------------
 data_paths <- c('data/nonblock-models/', 'data/block-models/')
-nworkers <- round(parallel::detectCores()/2)
+# nworkers <- round(parallel::detectCores()/2)
+nworkers <- parallel::detectCores() - 2
 
 
 ## -------------------------------------------------------------------------------------------------------------

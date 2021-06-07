@@ -10,7 +10,6 @@ analysis_through_time <- function(td, samp_time = -1,
   #   (`samp_time < 1`) or (`samp_time >= td$max_nsteps`): only use `t_onset = {0, td$max_nsteps}`
   #   otherwise subsampled using the given `samp_time` using`seq(from = 0, to = td$max_nsteps, by = samp_time)`
   
-  label_list <- list()
   
   # parse sampling time 
   if ((samp_time < 1) | (samp_time >= td$max_nsteps)) {
@@ -20,6 +19,17 @@ analysis_through_time <- function(td, samp_time = -1,
     time_vec <- seq(from = 0, to = td$max_nsteps, by = samp_time)
   }
 
+  # do this to get vector of labels
+  td_sub_0 <- td$clone(deep = TRUE)
+  
+  td_sub_0$G <- graph.data.frame(
+    as_data_frame(td_sub_0$G, 'edges') %>% filter(onset == 0),
+    directed = FALSE,
+    vertices = as_data_frame(td_sub_0$G, 'vertices')
+  )
+  
+  label_list <- do.call(analysis_function, c(list(td = td_sub_0), analysis_arguments))$labels
+  
   # perform analysis by filtering the "onset" field in the edges data frames of the graph `td$G`
   time_analysis_df <- lapply(time_vec, function(t_on) {
     td_sub <- td$clone(deep = TRUE)
@@ -30,16 +40,11 @@ analysis_through_time <- function(td, samp_time = -1,
       vertices = as_data_frame(td_sub$G, 'vertices')
     )
     
-    div_metric_sub <- do.call(analysis_function, c(list(td = td_sub), analysis_arguments))
+    metric_sub <- do.call(analysis_function, c(list(td = td_sub), analysis_arguments))
     
-    if (length(label_list) == 0) {
-      label_list <-  div_metric_sub$labels
-    }
-    
-    return(div_metric_sub$values %>% as_tibble() %>% mutate(t = t_on))
+    return(metric_sub$values %>% as_tibble() %>% mutate(t = t_on))
     
   }) %>% bind_rows()
-
   
   if (bind_info) {
     time_analysis_df <- time_analysis_df %>% bind_cols(td$info)
