@@ -2,6 +2,8 @@
 title: "Run analysis scripts for diversity analysis through time" 
 ---
 
+Although certain analyses were already done during the simulation scripts, changes were made and they were only analyzed at the end. Hence this script is to run the analyses again, in particular the diversity analysis at different times (see `samp_time`) during the discovery process.
+
 ```{r message=F}
 import_packages <- function() {
   library(tidyverse)

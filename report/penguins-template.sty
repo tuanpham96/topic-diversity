@@ -1,0 +1,119 @@
+\ProvidesPackage{penguins-template}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{titlesec}
+\usepackage{geometry}
+\usepackage{mathtools}
+\usepackage{commath}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{fvextra}
+\usepackage[export]{adjustbox}[2011/08/13]
+\usepackage{indentfirst}
+\usepackage{wrapfig}
+\usepackage{euscript}
+% \usepackage[makeroom]{cancel}
+\usepackage{enumitem}
+% \usepackage{tikzpagenodes}
+% \usepackage{soul}
+% \usepackage[normalem]{ulem}
+
+% Spacing and geometry of page
+\geometry{margin=0.5in,tmargin=0.45in,bmargin=0.45in,footskip=0.25in}
+% \setlength{\parindent}{12pt}
+% \setlength{\parskip}{0.1em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+
+\titlespacing\section{0pt}{0.5em}{0pt}
+\titlespacing\subsection{0pt}{0pt}{0pt}
+\titlespacing\subsubsection{0pt}{0pt}{0pt}
+
+% Title formats
+% syntax: \titleformat{command}[shape]{format}{label}{sep}{before}[after]
+% for running text: \titleformat{\subsection}[runin]{}{}{}{}[]
+
+\titleformat{\section}{\normalfont\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\arabic{subsection}.}{0.4em}{}
+\titleformat{\subsubsection}[runin]{\normalfont\bfseries}{\noindent\thesubsubsection}{0.3em}{}[: \ ]
+
+% Color definitions
+\definecolor{verylightred}{rgb}{0.95,0.9,0.93}
+\definecolor{verylightgray}{rgb}{0.9,0.9,0.9}
+\definecolor{darkerblue}{rgb}{0,0,0.9}
+
+% Hyperlink setups
+\hypersetup{
+    colorlinks      = true,
+    linkcolor       = black,
+	urlcolor        = black,
+	anchorcolor     = black,
+    citecolor       = darkerblue,
+    filecolor       = black,
+ 	pdfborder       = {0 0 0},
+}
+
+% Figure captions
+\captionsetup{
+    margin          = 20pt,
+    belowskip       = -10pt,
+    font            = small,
+    labelfont       = bf,
+    justification   = justified
+}
+
+% Table settings
+% setting padding here, from https://tex.stackexchange.com/questions/31672/column-and-row-padding-in-tables#31704
+\setlength{\tabcolsep}{0.5em} % for the horizontal padding
+\renewcommand{\arraystretch}{1.25}% for the vertical padding
+
+
+% Enumitems spacing settings
+\setitemize{noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=1em}
+\setenumerate{nosep,topsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=1em}
+
+% Align equation spacing settings
+% https://tex.stackexchange.com/questions/47400/remove-vertical-space-around-align
+\usepackage{etoolbox}
+\newcommand{\zerodisplayskips}{%
+  \setlength{\abovedisplayskip}{0pt}%
+  \setlength{\belowdisplayskip}{0pt}%
+  \setlength{\abovedisplayshortskip}{-20pt}%
+  \setlength{\belowdisplayshortskip}{0pt}}
+\appto{\normalsize}{\zerodisplayskips}
+\appto{\small}{\zerodisplayskips}
+\appto{\footnotesize}{\zerodisplayskips}
+
+% Glossary setup
+% \usepackage[acronym]{glossaries}
+% \makeglossaries
+% \loadglsentries{abbrev}
+% \setlength{\glsdescwidth}{0.8\textwidth}
+
+% Import document-specific math definitions/shortcuts
+\include{math-definitions}
+
+% will conflict will Autoref (multple)
+\AtBeginDocument{%
+  \LetLtxMacro\hyperrefautoref\autoref
+  \LetLtxMacro\autoref\firstboldautoref
+}
+\makeatletter
+\DeclareRobustCommand\firstboldautoref{\@firstboldautoref}
+\def\@firstboldautoref#1#{%
+  \def\fb@autoref@star{#1}%
+  \fb@autoref
+}
+\def\fb@autoref#1{%
+    \global\expandafter\let\csname boldautoref@#1\endcsname\@empty
+    \textbf{\expandafter\hyperrefautoref\fb@autoref@star{#1}}%
+}
+\makeatother
+
+
+% autoref name
+\renewcommand{\figureautorefname}{Fig.} % PS
+\renewcommand{\equationautorefname}{Eq.} % PS
+% \renewcommand{\tableautorefname}{Tab.} % PS

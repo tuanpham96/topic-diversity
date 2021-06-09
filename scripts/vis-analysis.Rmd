@@ -1,0 +1,469 @@
+---
+title: "Visualize analysis" 
+---
+
+
+```{r message=F}
+import_packages <- function() {
+  library(tidyverse)
+  library(reshape2)
+  library(purrr)
+  
+  library(bipartite)
+  library(igraph)
+  library(ggpubr)
+  
+  library(magrittr)
+  library(rlist)
+  
+  source('src/topic_discovery.R')
+  source('src/topic_analysis.R')
+}
+
+suppressPackageStartupMessages(import_packages())
+
+options(dplyr.summarise.inform = FALSE) 
+
+set.seed(2802) # for reproducibility of plotting + cluster assigments 
+
+```
+
+```{r}
+gen_theme <-   
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 11),
+    text = element_text(size = 10),
+    legend.background = element_blank(),
+    strip.background  = element_rect(fill = rgb(0.9,0.9,0.9,0.8), size=3, colour = rgb(1,1,1)),
+    legend.key.size   = unit(0.5, "cm"),
+  )
+
+# color_vec <- c("#ca0020","#f4a582","#c7c7c7","#92c5de","#0571b0")
+color_vec <- c("#0571b0", "#92c5de", "#c7c7c7", "#f4a582", "#ca0020")
+# color_vec <- c("#d7191c","#fdae61","#eded8e","#abdda4","#2b83ba")
+z_err <- 2.5
+
+nonblockmdl_colors <- c(
+      "PA_1" = "#cccccc",
+      "PA_2" = "#969696",
+      "PA_3" = "#525252",
+      "ER_1" = "#bae4b3",
+      "ER_2" = "#74c476",
+      "ER_3" = "#238b45",
+      "WS_1" = "#cbc9e2",
+      "WS_2" = "#9e9ac8",
+      "WS_3" = "#756bb1",
+      "WS_4" = "#54278f"
+    )
+```
+
+# Nonblock models 
+
+```{r}
+fig_path <- 'figures/nonblock/'
+data_path <- 'data/nonblock-models/'
+param_file <- file.path(data_path, 'params.rds')
+
+param_data <- readRDS(param_file)
+param_df <- param_data$params
+intra_generators <- param_data$intra_generators
+inter_initiators <- param_data$inter_initiators
+
+proc_labels <- readRDS(param_df[1,]$proc_file)$diversity$label
+
+param_df
+
+```
+
+```{r}
+chosen_procs <- list(population=c('N_T', 'H_p', 'R_T_random'),
+                     individual=c('d_g_mean', 'n_cc_mean', 'Js_T'))
+model_lists <- list(PA = c('PA_1', 'PA_2', 'PA_3'), 
+                    ER = c('ER_1', 'ER_2', 'ER_3'), 
+                    WS = c('WS_1', 'WS_2', 'WS_3', 'WS_4')
+                    )
+# proc_labels
+```
+
+
+```{r}
+time_mean_SEM <- function(data_df, name_of_proc, 
+                          z_err=3) {
+  df <- data_df %>%
+    mutate(Y = !!sym(name_of_proc)) %>%
+    group_by(t, p_alpha) %>%
+    summarize(
+      mean = mean(Y),
+      sd   = sd(Y),
+      sem  = sd / sqrt(n()),
+      err  = sem,
+      upp  = mean + z_err * err,
+      low  = mean - z_err * err
+    ) %>%
+    ungroup() %>%
+    mutate(p_alpha = factor(p_alpha))
+  df$p_alpha <- factor(df$p_alpha, levels = rev(levels(df$p_alpha)))
+  df$proc <- name_of_proc
+  return(df)
+}
+
+select_proc_and_model <- function(params, model_list, proc_list, ...) {
+  lapply(model_list, function(mdl) {
+    select_anly <- params %>% filter(model_topic == mdl)
+    select_anly <- lapply(select_anly$proc_file, function(proc_filename) {
+      readRDS(proc_filename)$diversity$df
+    }) %>% bind_rows()
+    
+    df <- lapply(proc_list, function(name_of_proc) {
+      time_mean_SEM(select_anly, name_of_proc, ...)
+    }) %>% bind_rows()
+    df$model <- mdl
+    return(df)
+  }) %>% bind_rows()
+}
+
+
+select_and_plot_time <- function(params, modellist_name, proclist_name,
+                                 model_lists_arg = model_lists, 
+                                 chosen_procs_arg = chosen_procs,
+                                 inter_init_val, tau_max_val, 
+                                 color_alpha = color_Vec, 
+                                 fig_width = 8,
+                                 fig_height = 5,
+                                 fig_suffix = 'png',
+                                 additional_theme = theme(), 
+                                 ...) {
+  fig_name <- sprintf('proc[%s]-intra[%s]-inter[%s]-tau[%d].%s', 
+                      proclist_name, modellist_name,
+                      inter_init_val, tau_max_val, fig_suffix)
+  df_all <- select_proc_and_model(
+    filter(params, tau_max == tau_max_val, inter_init == inter_init_val),
+    model_lists_arg[[modellist_name]],
+    chosen_procs_arg[[proclist_name]], 
+    ...
+  )
+  
+  df_all %>% ggplot(aes(x = t, color = p_alpha, fill = p_alpha)) +
+    geom_ribbon(
+      aes(ymin = low, ymax = upp),
+      alpha = 0.2,
+      linetype = 0,
+      show.legend = F
+    ) +
+    geom_line(aes(y = mean), size = 0.75, alpha = 0.8) +
+    scale_color_manual(expression(alpha), values = color_alpha) +
+    scale_fill_manual(values = color_alpha) +
+    facet_grid(proc ~ model , scales = 'free_y') +
+    labs(
+      x = 't',
+      y = sprintf('mean +/- %1g SEM', z_err),
+      title = sprintf('Evolution of %s indices of %s models', 
+                      proclist_name, modellist_name)
+    ) +
+    guides(x.sec = guide_none('intralayer models'),
+           y.sec = guide_none('diversity indices')) +
+    gen_theme + additional_theme
+  
+  ggsave(file.path(fig_path, fig_name), 
+         width=fig_width,
+         height=fig_height)
+
+}
+```
+
+```{r}
+lapply(names(chosen_procs), function(procLname) {
+  select_and_plot_time(
+    params = param_df %>% filter(tau_max == 50, model_agent == 'PA_2'),
+    modellist_name = 'SF',
+    model_lists_arg = list(SF = 'PA_2'),
+    proclist_name = procLname,
+    inter_init_val = 'SOFTMAX_2',
+    tau_max_val = 50,
+    fig_width = 4,
+    fig_suffix = 'pdf',
+    color_alpha = color_vec,
+    additional_theme = theme(
+      legend.title = element_text(hjust = 0.5, size = 12),
+      legend.key.size   = unit(0.4, "cm"),
+    ), 
+    z_err = z_err,
+  )
+}) %>% invisible()
+```
+
+
+```{r}
+variations <- expand_grid(
+  modelL_name = names(model_lists), 
+  procL_name  = names(chosen_procs),
+  tau_max = 50,
+  inter_init = unique(param_df$inter_init),
+)
+variations$ind <- 1:nrow(variations)
+
+lapply(variations$ind, function(ind) {
+  x <- variations[ind,]
+  select_and_plot_time(
+    params = param_df %>% filter(tau_max == 50),
+    modellist_name = x$modelL_name, 
+    proclist_name = x$procL_name,
+    inter_init_val = x$inter_init,
+    tau_max_val = x$tau_max, 
+    color_alpha = color_vec,
+    z_err = z_err
+  )
+}) %>% invisible()
+
+```
+
+
+
+```{r}
+main_var <- c('p_alpha', 'model_agent', 'inter_init')
+vars2remove <- c('n_a', 'n_t', 'tau_0', 'trial_id', 't',
+                 'tau_max', 'model_topic',
+                 'ind', 'data_file', 'proc_file')
+
+select_anly <- param_df %>% filter(
+  tau_max == 50
+) 
+
+select_anly <- select_anly$proc_file %>% lapply(function(proc_fn) {
+  readRDS(proc_fn)$diversity$df %>%
+    filter(t == max(t)) %>% 
+    select_at(vars(-vars2remove))
+}) %>% bind_rows()
+```
+
+
+```{r}
+norm_minmax <- function(x) {
+  return((x-min(x))/(max(x)-min(x)))
+}
+??zscore
+
+proc_list <- unlist(chosen_procs) %>% as.vector()
+mean_anly <- select_anly %>%
+  group_by_at(.vars = main_var) %>% 
+  summarise_all(partial(mean, na.rm=T)) %>%
+  select_at(.vars = c(proc_list, main_var)) %>% 
+  ungroup() %>% 
+  mutate_at(.vars = proc_list, norm_minmax) %>%
+  # mutate_at(.vars = proc_list, scale) %>% 
+  melt(id = main_var) %>%
+  rename(diversity = variable) 
+
+mean_anly %>% 
+  # filter(!(model_agent %in%  model_lists$PA)) %>% 
+  ggplot(aes(y = as.factor(p_alpha), x = model_agent, fill = value)) + 
+  geom_tile() + 
+  facet_grid(inter_init ~ diversity) +
+  scale_fill_viridis_c() +
+  # scale_fill_gradientn(colours = c("red", '#efefef', 'blue')) +  
+  labs(
+    x = 'nonblock models',
+    y = expression(alpha), 
+    title = 'Summarized of diversity indices for nonblock models (at the end, minmax norm)'
+  ) +
+  guides(x.sec = guide_none('diversity indices'),
+         y.sec = guide_none('interlayer initialization')) +
+  gen_theme +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+    legend.position = 'bottom'
+  )
+
+fig_name <- sprintf('summary-nonblock-tau[50].pdf')
+ggsave(file.path(fig_path, fig_name), width=8, height=4)
+```
+
+```{r}
+get_model_type <- function(mdl) {
+  sapply(model_lists, function(mdls) {
+    mdl %in% mdls
+  }) %>% which %>% names()
+}
+proc_list <- unlist(chosen_procs) %>% as.vector()
+select_anly %>%
+  filter(inter_init == 'SOFTMAX_2') %>% 
+  group_by_at(.vars = main_var) %>% 
+  summarise_all(partial(mean, na.rm=T)) %>%
+  select_at(.vars = c(proc_list, main_var)) %>% 
+  mutate(model_type = get_model_type(model_agent)) %>% 
+  ungroup() %>% 
+  mutate_at(.vars = proc_list, norm_minmax) %>% 
+  melt(id = c(main_var, 'model_type')) %>%
+  rename(diversity = variable) %>%  
+  ggplot(aes(x = p_alpha, color = model_agent, y = value)) + 
+  geom_line(size = 0.75) +
+  geom_point(size = 1.5) +
+  facet_grid(model_type ~ diversity, scales = 'free') +
+  scale_color_manual(
+    values = nonblockmdl_colors
+  ) + 
+  labs(
+    x = expression(alpha ~ '("rabbit-hole" probability)'),
+    y = 'value at the end, minmax norm',
+    title = 'Summarized of diversity indices for nonblock models'
+  ) +
+  guides(x.sec = guide_none('diversity indices'),
+         y.sec = guide_none('intralayer nonblock models')) +
+  gen_theme +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 11),
+    text = element_text(size = 11),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+    legend.position = 'bottom'
+  ) + guides(col = guide_legend(nrow = 3))
+
+
+fig_name <- sprintf('summary-nonblock-inter[SOFTMAX_2]-tau[50].pdf')
+ggsave(file.path(fig_path, fig_name), width=10, height=5)
+
+```
+
+# Block models 
+
+```{r}
+fig_path <- 'figures/block/'
+data_path <- 'data/block-models/'
+param_file <- file.path(data_path, 'params.rds')
+
+param_data <- readRDS(param_file)
+param_df <- param_data$params
+intra_generators <- param_data$intra_generators
+inter_initiators <- param_data$inter_initiators
+
+proc_labels <- readRDS(param_df[1,]$proc_file)$diversity$label
+
+# for now limit analysis on same model
+param_df <- param_df %>% filter(model_agent == model_topic)
+param_df
+
+```
+
+```{r}
+chosen_procs <- list(population = c('N_T', 'H_p', 'R_T_random'),
+                     group = c('H_gp', 'H_gi'),
+                     individual=c('d_g_mean', 'n_cc_mean', 'Js_T'))
+model_lists <- list(SBMs = unique(param_df$model_agent))
+# proc_labels
+```
+
+```{r}
+variations <- expand_grid(
+  modelL_name = names(model_lists), 
+  procL_name  = names(chosen_procs),
+  inter_init = unique(param_df$inter_init),
+)
+variations$ind <- 1:nrow(variations)
+
+lapply(variations$ind, function(ind) {
+  x <- variations[ind,]
+  select_and_plot_time(
+    params = param_df,
+    modellist_name = x$modelL_name, 
+    proclist_name = x$procL_name,
+    inter_init_val = x$inter_init,
+    tau_max_val = 50,     
+    fig_width = 8,
+    fig_height = ifelse(length(chosen_procs[[x$procL_name]]) == 3, 4.5, 3.5),
+    fig_suffix = 'pdf',
+    color_alpha = color_vec,
+    additional_theme = theme(
+      legend.title = element_text(hjust = 0.5, size = 12),
+      legend.key.size   = unit(0.4, "cm"),
+    ), 
+    z_err = z_err
+  )
+}) %>% invisible()
+
+```
+
+```{r}
+main_var <- c('p_alpha', 'model_agent', 'inter_init')
+vars2remove <- c('n_a', 'n_t', 'tau_0', 'trial_id', 't',
+                 'tau_max', 'model_topic',
+                 'ind', 'data_file', 'proc_file')
+
+select_anly <- param_df 
+select_anly <- select_anly$proc_file %>% lapply(function(proc_fn) {
+  readRDS(proc_fn)$diversity$df %>%
+    filter(t == max(t)) %>% 
+    select_at(vars(-vars2remove))
+}) %>% bind_rows()
+```
+
+```{r}
+norm_minmax <- function(x) {
+  return((x-min(x))/(max(x)-min(x)))
+}
+
+proc_list <- unlist(chosen_procs) %>% as.vector()
+mean_anly <- select_anly %>%
+  group_by_at(.vars = main_var) %>% 
+  summarise_all(partial(mean, na.rm=T)) %>%
+  select_at(.vars = c(proc_list, main_var)) %>% 
+  ungroup() %>% 
+  mutate_at(.vars = proc_list, norm_minmax) %>% 
+  melt(id = main_var) %>%
+  rename(diversity = variable) 
+
+```
+
+```{r}
+mean_anly %>% 
+  ggplot(aes(y = as.factor(p_alpha), x = model_agent, fill = value)) + 
+  geom_tile() + 
+  facet_grid(inter_init ~ diversity) +
+  scale_fill_viridis_c() +
+  labs(
+    x = 'block models',
+    y = expression(alpha ~ '(rabbit-hole probability)'), 
+    title = 'Summarized of diversity indices for nonblock models (at the end, minmax norm)'
+  ) +
+  guides(x.sec = guide_none('diversity indices'),
+         y.sec = guide_none('interlayer initialization')) +
+  gen_theme +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+    legend.position = 'bottom'
+  )
+
+fig_name <- sprintf('summary-block-tau[50].pdf')
+ggsave(file.path(fig_path, fig_name), width=8, height=5.5)
+```
+
+
+
+```{r}
+select_anly %>%
+  group_by_at(.vars = main_var) %>% 
+  summarise_all(partial(mean, na.rm=T)) %>%
+  select_at(.vars = c(proc_list, main_var)) %>% 
+  ungroup() %>% 
+  mutate_at(.vars = proc_list, norm_minmax) %>% 
+  melt(id = main_var) %>%
+  rename(diversity = variable) %>% 
+  filter(diversity %in% chosen_procs$population) %>% 
+  ggplot(aes(x = p_alpha, color = model_agent, y = value)) + 
+  geom_line() + 
+  facet_grid(inter_init ~ diversity) 
+  # labs(
+  #   x = 'block models',
+  #   y = expression('p'[alpha]), 
+  #   title = 'Summarized of diversity indices for nonblock models (at the end, minmax norm)'
+  # ) +
+  # guides(x.sec = guide_none('diversity indices'),
+  #        y.sec = guide_none('interlayer initialization')) +
+  # gen_theme +
+  # theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+  #   legend.position = 'bottom'
+  # )
+
+# fig_name <- sprintf('summary-block-tau[50].png')
+# ggsave(file.path(fig_path, fig_name), width=10, height=4)
+
+```
+

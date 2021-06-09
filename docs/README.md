@@ -1,0 +1,3 @@
+- `project-idea.pdf`: idea presentation 
+- `project-presentation.pdf`: project result presentation
+- `project-report.pdf`: summary of results

@@ -10,8 +10,13 @@ required_pkgs <- c(
   'progress',
   'BiocManager',
   'moments',
-  'jacpop'
+  'jacpop',
+  'rlist',
+  'latex2exp', # may not really need
+  'svglite', # may not really need
+  'ggformula' # may not really need
 )
+
  
 install.packages(required_pkgs)
 

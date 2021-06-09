@@ -143,7 +143,7 @@ TopicDiscoveryConfig <- R6Class(
         init_cross = rgb(0.0, 0.0, 0.0, 0.3),
         new_cross  = rgb(0.3, 0.7, 0.3, 0.8)
       )
-      
+      self$use_colors <- TRUE
       self$colors <- def_colors
       
       if (is.na(val) %>% all) {

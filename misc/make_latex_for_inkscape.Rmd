@@ -1,0 +1,35 @@
+---
+title: "make_latex"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$$
+A \qquad
+T \qquad
+\tau \qquad
+P \qquad
+\mathbf{A} \qquad
+\mathbf{T} \qquad
+\mathbf{P} \qquad
+{\color{blue} \alpha} \qquad
+{\color{red} \beta} \qquad
+\to \qquad
+\Rightarrow \qquad
+\Longrightarrow \qquad
+\begin{cases}
+1 \\
+2
+\end{cases}
+$$
+
+$$
+\begin{bmatrix}
+1 \\ 
+2 \\
+3
+\end{bmatrix}
+$$

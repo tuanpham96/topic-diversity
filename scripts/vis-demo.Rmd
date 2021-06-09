@@ -1,0 +1,516 @@
+---
+title: "Visualize the model parameters: the intralayer generators and interlayer initiators" 
+---
+
+
+```{r message=F}
+import_packages <- function() {
+  library(tidyverse)
+  library(reshape2)
+  library(purrr)
+  
+  library(bipartite)
+  library(igraph)
+  library(ggpubr)
+  
+  library(magrittr)
+  library(rlist)
+  
+  source('src/topic_discovery.R')
+  source('src/topic_analysis.R')
+}
+
+suppressPackageStartupMessages(import_packages())
+
+options(dplyr.summarise.inform = FALSE) 
+
+set.seed(2802) # for reproducibility of plotting + cluster assigments 
+
+fig_path <- 'figures/demo'
+
+gen_theme <-   
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12),
+    text = element_text(size = 11),
+    legend.background = element_blank()
+  )
+
+nonblockmdl_colors <- c(
+      "PA_1" = "#cccccc",
+      "PA_2" = "#969696",
+      "PA_3" = "#525252",
+      "ER_1" = "#bae4b3",
+      "ER_2" = "#74c476",
+      "ER_3" = "#238b45",
+      "WS_1" = "#cbc9e2",
+      "WS_2" = "#9e9ac8",
+      "WS_3" = "#756bb1",
+      "WS_4" = "#54278f"
+    )
+```
+
+# Visualize network
+
+```{r}
+
+colors=list(
+  agent_vert = rgb(1, 0, 0, 0.8), topic_vert = rgb(0.1, 0.2, 0.9, 0.8),
+  agent_edge = rgb(1, 0, 0, 0.6), topic_edge = rgb(0.1, 0.2, 0.9, 0.6),
+  init_cross = rgb(0, 0, 0, 0.3), new_cross = rgb(0.3, 0.7, 0.3, 0.8)
+)
+
+
+
+td <- TopicDiscovery$new(n_a = 50, 
+                         n_t = 100,
+                         p_alpha = 0.6, 
+                         tau_max = 50,
+                         max_nsteps = 50, 
+                         tau_0 = 1,
+                         mdl_gen = list(
+                           agent = partial(sample_pa, power = 1, directed = F),
+                           topic = partial(sample_pa, power = 1, directed = F)
+                         ),
+                         groups = NA, 
+                         inter_init = list(type='random'),
+                         colors = colors)
+G <- td$G
+
+pseudo_cl <- make_clusters(G, membership = V(G)$role_id)
+layout <- layout_with_kk(G, weights=ifelse(crossing(pseudo_cl, G),10,1))
+
+svg("figures/demo/demo-net.svg",  bg = "transparent", width = 6, height = 6)
+plot(G, layout=layout, 
+     vertex.label=NA,
+     vertex.size=5,
+     vertex.frame.color = rgb(0,0,0,0), 
+     edge.curved=0.1, edge.width=1)
+
+dev.off()
+
+```
+
+```{r}
+td <- TopicDiscovery$new(n_a = 4, 
+                         n_t = 6,
+                         p_alpha = 0.6, 
+                         tau_max = 50,
+                         max_nsteps = 50, 
+                         tau_0 = 1,
+                         mdl_gen = list(
+                           agent = partial(sample_pa, power = 0.5, directed = F),
+                           topic = partial(sample_pa, power = 0.5, directed = F)
+                         ),
+                         groups = NA, 
+                         inter_init = list(type='random'),
+                         colors = colors)
+G <- td$G
+
+pseudo_cl <- make_clusters(G, membership = V(G)$role_id)
+layout <- layout_with_kk(G, weights=ifelse(crossing(pseudo_cl, G), 4,1))
+
+svg("figures/demo/demo-small.svg",  bg = "transparent", width = 4, height = 4)
+plot(G, layout=layout, 
+     vertex.label=NA,
+     vertex.size=10,
+     vertex.frame.color = rgb(0,0,0,0), 
+     edge.curved=0.1, edge.width=1.2)
+
+dev.off()
+
+```
+
+# Nonblock models 
+
+```{r}
+data_path <- 'data/nonblock-models/'
+param_file <- file.path(data_path, 'params.rds')
+
+param_data <- readRDS(param_file)
+param_df <- param_data$params
+intra_generators <- param_data$intra_generators
+inter_initiators <- param_data$inter_initiators
+
+```
+
+## Intralayer generators 
+
+```{r}
+all_intra_gens <- names(intra_generators)
+all_intra_gens
+N_v <- 1000
+n_m <- 20
+
+model_lists <- list(PA = c('PA_1', 'PA_2', 'PA_3'), 
+                    ER = c('ER_1', 'ER_2', 'ER_3'), 
+                    WS = c('WS_1', 'WS_2', 'WS_3', 'WS_4')
+                    )
+```
+
+```{r}
+PA_models <- all_intra_gens[grepl('PA', all_intra_gens)]
+
+x_deg_vec <- 2^(seq(2,8,0.5))
+
+deg_PA <- sapply(PA_models, function(mdl) {
+  sapply(1:n_m, function(.) {
+    d <- intra_generators[[mdl]](N_v) %>% degree() %>% as.vector()
+    sapply(x_deg_vec, function(x) {sum(d >= x)}) / length(d)
+  }) %>% rowMeans()
+}) %>% as_tibble() %>% 
+  mutate(degree = x_deg_vec)
+
+gg_PA <- deg_PA %>% melt(id = 'degree') %>% 
+  rename(model = variable, prob = value) %>% 
+  ggplot(aes(x = degree, y = prob, color = model)) +
+  geom_line(size=1, alpha=0.8) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(
+    title = sprintf('CCDF of PA models \n(N =  %d)', N_v),
+    x = 'degree',
+    y = 'CCDF'
+  ) +
+  scale_color_manual(
+    name = '',
+    values = nonblockmdl_colors[model_lists$PA %>% as.vector()],
+    labels = c(PA_1 = 'PA_1 (sublinear)',
+               PA_2 = 'PA_2 (linear, SF)',
+               PA_3 = 'PA_3 (superlinear)')
+  ) +
+  gen_theme + 
+  theme(
+    legend.position = c(0.7, 0.8)
+  )
+
+```
+
+
+```{r}
+ER_models <- all_intra_gens[grepl('ER', all_intra_gens)]
+
+deg_ER <- sapply(ER_models, function(mdl) {
+  sapply(1:n_m, function(.) {
+    intra_generators[[mdl]](N_v) %>% degree() %>% as.vector()
+  }) 
+}) %>% as_tibble() 
+
+gg_ER <- deg_ER %>% melt() %>%
+  rename(model = variable, degree = value) %>%
+  ggplot(aes(degree, fill = model)) +
+  geom_density(alpha = 0.5, linetype = 0, n = 80) +
+  labs(title = sprintf('PDF of ER models \n(N =  %d)', N_v),
+       x = 'degree',
+       y = 'PDF') +
+  scale_fill_manual(
+    name = '',
+    values = nonblockmdl_colors[model_lists$ER %>% as.vector()],
+    labels = c(ER_1 = 'ER_1 (p=0.01)',
+               ER_2 = 'ER_2 (p=0.05)',
+               ER_3 = 'ER_3 (p=0.10)')
+  ) + 
+  gen_theme + 
+  theme(
+    legend.position = c(0.7, 0.8))
+
+```
+
+
+
+```{r}
+WS_models <- all_intra_gens[grepl('WS', all_intra_gens)]
+p_WS <- list(WS_0 = 0.001, WS_1=0.005, WS_2=0.025, WS_3=0.125, WS_4=0.625)
+norm_minmax <- function(v) { return((v-min(v)/(max(v)-min(v))))}
+
+prop_WS <- lapply(names(p_WS), function(mdl) {
+  lapply(1:n_m, function(.) {
+    g <- sample_smallworld(N_v, dim = 1, nei = 5, p =p_WS[[mdl]])
+    return(list(L = mean_distance(g), C = transitivity(g, type="global")))
+  }) %>% bind_rows() %>% 
+    summarise_all(mean) %>%
+    mutate(model = mdl, p = p_WS[[mdl]])
+}) %>% bind_rows() %>%
+  mutate(L = (L-min(L)) / (max(L)-min(L)),
+         C = (C-min(C)) / (max(C)-min(C)))
+prop_WS
+x_label_WS <-
+  c(WS_0 = 0.001,
+    sapply(WS_models, function(mdl) {
+      sprintf('%s \n(%.3f)', mdl, p_WS[[mdl]])
+    }))
+
+gg_WS <-
+  prop_WS %>% melt(id=c('p','model')) %>% 
+  ggplot(aes(x=p,y=value,linetype=variable)) +
+  geom_tile(aes(x=p,y=0.5,fill=model),
+            width=0.2, height=1.2,
+            alpha = 0.5, show.legend = F) + 
+  geom_line(size=0.5) +
+  geom_point(size=3,show.legend = F) +
+  labs(title = sprintf('WS models \n(N =  %d)', N_v),
+       x = 'model (rewire prob)',
+       y = 'prop/max(prop)') +
+  scale_linetype_discrete(
+    name = '',
+    labels = c(L = 'mean dist.',
+               C = 'cluster. coeff.')
+  ) + 
+  scale_fill_manual(
+    values = c('white',
+               nonblockmdl_colors[model_lists$WS %>% as.vector()],
+             'white')
+    ) +
+  scale_x_log10(breaks = unlist(p_WS), labels=x_label_WS) +
+  gen_theme + 
+  theme(
+        legend.position = c(0.2, 0.2)
+        )
+
+```
+
+
+```{r fig.width=8, fig.height=3}
+
+ggarrange(gg_PA, gg_ER, gg_WS, 
+          nrow = 1, ncol = 3, 
+          align = 'hv')
+ggsave(file.path(fig_path, 'nonblock-intra.pdf'),
+    width = 10, height = 3)
+# ggsave(file.path(fig_path, 'nonblock-intra.png'),
+#     width = 8, height = 3)
+```
+
+
+
+## Interlayer initiators 
+
+
+```{r}
+all_inter_ints <- names(inter_initiators)
+all_inter_ints
+```
+
+```{r}
+inter_intra_combos <- expand_grid(
+  inter_init = all_inter_ints, 
+  intra_gen = all_intra_gens
+)
+inter_intra_combos$ind <- 1:nrow(inter_intra_combos)
+
+inter_intra_ptopic <- inter_intra_combos$ind %>% lapply(function(ind) {
+  inter_select <- inter_intra_combos[ind,]$inter_init
+  intra_select <- inter_intra_combos[ind,]$intra_gen
+  demo_files <- filter(param_df, inter_init == inter_select, model_agent == intra_select)$data_file
+  df_ptopic <- lapply(demo_files, function(demo_file) {
+    td <- readRDS(demo_file)
+    td_sub <- td$clone(deep = TRUE)
+    
+    td_sub$G <- graph.data.frame(
+      as_data_frame(td_sub$G, 'edges') %>% filter(onset == 0),
+      directed = FALSE,
+      vertices = as_data_frame(td_sub$G, 'vertices')
+    )
+    
+    M <- td_sub$get_separate_matrices()
+    p_select_topic <- M$TAU %>% rowMeans()
+    degree_topic <- rowSums(M$T)
+    return(tibble(degree_topic, p_select_topic))
+  }) %>% bind_rows() %>%  
+    group_by(degree_topic) %>% 
+    summarise(p_topic = mean(p_select_topic)) %>%
+    mutate(inter = inter_select,
+           intra = intra_select)
+  
+  return(df_ptopic)
+}) %>% bind_rows()
+
+```
+
+```{r}
+gg_list <- c('PA', 'ER', 'WS') %>% lapply(function(gen_mdl) {
+  mdls <- all_intra_gens[grepl(gen_mdl, all_intra_gens)]
+  g_list <- lapply(mdls, function(mdl) {
+    inter_intra_ptopic %>% filter(intra == mdl, p_topic > 0) %>%
+      ggplot(aes(x = degree_topic, y = p_topic, color = inter)) +
+      geom_line(show.legend = F, alpha=0.3) + geom_point(alpha=0.5) +
+      scale_y_log10() +
+      labs(title = mdl,
+           x = ifelse(mdl == 'PA_1', 'degree', ''),
+           y = ifelse(mdl == 'PA_1', 'p(topic)', '')) +
+      gen_theme +
+      theme(legend.key.size   = unit(0.1, "cm"),
+            legend.key.width  = unit(0.1, "cm"))
+  })
+  ggarrange(plotlist = g_list, 
+            nrow = 1, ncol = length(g_list),
+            align = 'hv',
+            legend = 'right',
+            common.legend = T)
+})
+
+```
+
+```{r}
+# svg(filename = file.path(fig_path, 'nonblock-inter.svg'),
+#     width = 8, height = 6)
+
+main_ttl <- as_ggplot(text_grob('Interlayer initiatiors for nonblock models',size = 11)) +
+  theme(plot.margin = margin(0,1,0,0, "cm"))
+
+ggarrange(plotlist = c(list(main_ttl), gg_list), 
+          nrow = length(gg_list)+1, ncol = 1,
+          align = 'hv', 
+          legend = 'bottom', 
+          heights = c(1,5,5,5,5),
+          common.legend = T)
+
+# dev.off()
+ggsave(filename = file.path(fig_path, 'nonblock-inter.pdf'),
+    width = 8, height = 6)
+
+```
+
+
+# Block models 
+
+```{r}
+data_path <- 'data/block-models/'
+param_file <- file.path(data_path, 'params.rds')
+
+param_data <- readRDS(param_file)
+param_df <- param_data$params
+intra_generators <- param_data$intra_generators
+inter_initiators <- param_data$inter_initiators
+
+```
+
+## Intralayer generators 
+
+```{r}
+all_intra_gens <- names(intra_generators)
+all_intra_gens
+```
+
+```{r}
+plot_mat <- function(M_bin, ttl, color_vals = c(rgb(0.2,0.2,0.2), 'white')) {
+  general_mat_theme <- theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 9),
+      text = element_text(size = 8),
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      legend.position = "none",
+      panel.border = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    )
+  
+  M_bin %>% melt %>%
+    ggplot(aes(
+      x = as.integer(Var1),
+      y = as.integer(Var2),
+      fill = as.factor(value)
+    )) +
+    geom_raster() +
+    coord_equal() +
+    scale_fill_manual(values = color_vals) +
+    scale_y_reverse() +
+    labs(x = '', y = '', title = ttl) +
+    general_mat_theme
+}
+
+```
+
+```{r}
+mdl_names <- list(
+  SBM_1 = 'SBM_1 \n (within=0.1, between=0.001)',
+  SBM_2 = 'SBM_2 \n (within=0.1, between=0.004)',
+  SBM_3 = 'SBM_3 \n (within=0.1, between=0.016)',
+  SBM_4 = 'SBM_4 \n (within=0.1, between=0.064)'
+)
+```
+
+
+```{r}
+
+color_vec <- c(rgb(0.98,0.98,0.98), rgb(0.1,0.1,0.1))
+gg_list <- lapply(all_intra_gens, function(mdl) {
+  data_file_name <- filter(param_df, model_topic == mdl)[1,]$data_file
+  td <- readRDS(data_file_name)
+  M <- td$get_separate_matrices()$T
+  rownames(M) <- 1:td$n_t
+  colnames(M) <- 1:td$n_t
+  plot_mat(M, mdl_names[[mdl]], color_vals = color_vec)
+})
+```
+
+```{r}
+# ggarrange(plotlist = gg_list,
+#           nrow = 2, ncol = 2,
+#           align = 'hv')
+# 
+# ggsave(file.path(fig_path, 'block-intra.png'),
+#     width = 5, height = 6)
+ggarrange(plotlist = gg_list,
+          nrow = 1, ncol = 4,
+          align = 'hv')
+
+ggsave(file.path(fig_path, 'block-intra.pdf'),
+    width = 8, height = 5)
+```
+
+
+## Interlayer initiators 
+
+
+```{r}
+all_inter_ints <- names(inter_initiators)
+all_inter_ints
+```
+```{r}
+init_names <- list(
+  GROUP_1 = 'GROUP_1 \n (p_sg = 0.1)',
+  GROUP_2 = 'GROUP_2 \n (p_sg = 0.2)',
+  GROUP_3 = 'GROUP_3 \n (p_sg = 0.4)',
+  GROUP_4 = 'GROUP_4 \n (p_sg = 0.8)'
+)
+```
+
+```{r}
+color_vec <- c(rgb(0.98,0.98,0.98), rgb(0.1,0.1,0.1))
+gg_list <- lapply(all_inter_ints, function(mdl) {
+  data_file_name <- filter(param_df, inter_init == mdl)[1,]$data_file
+  td <- readRDS(data_file_name)
+  M <- td$get_separate_matrices()$TAU
+  rownames(M) <- 1:td$n_t
+  colnames(M) <- 1:td$n_a
+  plot_mat(M %>% t, init_names[[mdl]], color_vec)
+})
+
+gg_list[[1]] <- gg_list[[1]] + xlab('agent') + ylab('topic')
+gg_taus <- ggarrange(plotlist = gg_list,
+                     nrow = 1, ncol = length(gg_list),
+                     align = 'hv')
+```
+
+```{r}
+main_ttl <- as_ggplot(text_grob('Interlayer initiatiors for block models', size = 11)) +
+  theme(plot.margin = margin(0,1,0,0, "cm"))
+
+
+ggarrange(main_ttl, gg_taus, 
+          nrow = 2, ncol = 1,
+          align = 'hv', 
+          heights = c(0.8,5))
+
+
+# ggsave(file.path(fig_path, 'block-inter.png'),
+#     width = 5, height = 5.5)
+
+ggsave(file.path(fig_path, 'block-inter.pdf'),
+    width = 5, height = 5.5)
+
+
+```
+

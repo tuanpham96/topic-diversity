@@ -1,0 +1,17 @@
+% Global math defs
+\DeclareMathOperator{\di}{d\!}
+\DeclareMathOperator{\tr}{tr}
+\newcommand{\var}{\mathrm{var}}
+\DeclareMathOperator{\softmax}{softmax}
+\newcommand*\Eval[3]{\left.#1\right\rvert_{#2}^{#3}}
+\newcommand{\distas}[1]{\mathbin{\overset{#1}{\kern\z@\sim}}}%
+\newcommand*\Expected[1]{\left\langle #1 \right\rangle}
+% \newcommand*{\eqdef}{\overset{\tiny\mathrm{def}}{=\joinrel=}}
+\newcommand*{\eqdef}{\overset{\mathrm{def}}{=}}
+
+
+% Document specific
+\newcommand*{\unfdistrib}[2]{U\left[#1,#2\right]}
+\newcommand*{\unfnormgen}[1]{U^{\prime}\left(#1\right)}
+\newcommand*{\normdistrib}[2]{\mathcal{N}\left(#1,#2\right)}
+\newcommand*{\betadistrib}[2]{\mathcal{B}\left(#1,#2\right)}
