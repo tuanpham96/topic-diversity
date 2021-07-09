@@ -7692,10 +7692,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.28"
-     inkscape:cx="403.90625"
-     inkscape:cy="286.32812"
+     inkscape:cx="415.23438"
+     inkscape:cy="280.07812"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g173811"
      inkscape:document-rotation="0"
      showgrid="false"
      inkscape:window-width="1920"
@@ -7789,7 +7789,10 @@
          y="184.05554" /></text>
     <g
        id="g173811"
-       transform="translate(2.43021,-84.58279)">
+       transform="translate(2.43021,-84.58279)"
+       inkscape:export-filename="/home/penguinsfly/Documents/playground/topic-diversity/figures/report/demo-quants.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
       <rect
          style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.150001;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          id="rect17733"
@@ -7942,15 +7945,15 @@
          id="g168287"
          transform="translate(2.5802091,9.0301986)">
         <path
-           style="fill:#fafafa;fill-opacity:1;stroke:#000000;stroke-width:0.264583;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           style="fill:#fafafa;fill-opacity:1;stroke:#000000;stroke-width:0.210508;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
            id="rect268691-99-4"
-           width="34.940483"
+           width="55.197037"
            height="7.0553856"
            x="5.9941401"
            y="121.87642"
            sodipodi:type="rect"
            inkscape:path-effect="#path-effect69122"
-           d="M 8.6399734,121.87642 H 38.28879 a 2.6458333,2.6458333 45 0 1 2.645833,2.64583 v 1.76372 A 2.6458333,2.6458333 135 0 1 38.28879,128.9318 H 8.6399734 a 2.6458333,2.6458333 45 0 1 -2.6458333,-2.64583 v -1.76372 a 2.6458333,2.6458333 135 0 1 2.6458333,-2.64583 z" />
+           d="M 8.6399734,121.87642 H 58.545344 a 2.6458333,2.6458333 45 0 1 2.645833,2.64583 v 1.76372 a 2.6458333,2.6458333 135 0 1 -2.645833,2.64583 H 8.6399734 a 2.6458333,2.6458333 45 0 1 -2.6458333,-2.64583 v -1.76372 a 2.6458333,2.6458333 135 0 1 2.6458333,-2.64583 z" />
         <g
            id="g213869"
            transform="matrix(0.49048718,0,0,0.49048718,1.411173,-123.58904)">
@@ -8036,7 +8039,7 @@
           </g>
           <g
              id="g90090"
-             transform="translate(-3.9470346,2.1166667)">
+             transform="translate(-3.9470346,0.78561201)">
             <circle
                style="opacity:0.9;fill:#475beb;fill-opacity:1;stroke:none;stroke-width:0.14389;stroke-linecap:round;stroke-linejoin:round"
                id="path2405-89-6-5"
@@ -8158,7 +8161,7 @@
                y="526.04773"
                id="tspan73098-8-9">low H<tspan
    style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:5.29167px;font-family:FreeSans;-inkscape-font-specification:'FreeSans, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;baseline-shift:sub;text-anchor:middle;stroke-width:0.182142"
-   id="tspan65787-6-09">T</tspan></tspan></text>
+   id="tspan65787-6-09">p</tspan></tspan></text>
           <text
              xml:space="preserve"
              style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:6.49469px;line-height:1.25;font-family:FreeSans;-inkscape-font-specification:'FreeSans, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.182142"
@@ -8171,7 +8174,7 @@
                y="525.98926"
                id="tspan73098-8-8-8">high H<tspan
    style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:5.29167px;font-family:FreeSans;-inkscape-font-specification:'FreeSans, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;baseline-shift:sub;text-anchor:middle;stroke-width:0.182142"
-   id="tspan65787-6-0-5">T</tspan></tspan></text>
+   id="tspan65787-6-0-5">p</tspan></tspan></text>
         </g>
         <text
            xml:space="preserve"
@@ -8187,7 +8190,9 @@
    style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:4.02243px;font-family:FreeSans;-inkscape-font-specification:'FreeSans, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.129775"
    id="tspan17292-6-3">H<tspan
    style="font-size:3.11459px;baseline-shift:sub;stroke-width:0.129775"
-   id="tspan48917-7">T</tspan> </tspan>topic entropy</tspan></text>
+   id="tspan48917-7">p</tspan> </tspan>population topic <tspan
+   style="font-weight:bold"
+   id="tspan13841">entropy</tspan></tspan></text>
       </g>
       <g
          id="g168240"
@@ -12018,13 +12023,13 @@
         </g>
         <text
            xml:space="preserve"
-           style="font-size:2.82222px;line-height:1.25;font-family:sans-serif;word-spacing:0px;fill:#808080;stroke-width:0.264583"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222px;line-height:1.25;font-family:FreeSans;-inkscape-font-specification:FreeSans;word-spacing:0px;fill:#808080;stroke-width:0.264583"
            x="118.45325"
            y="176.03661"
            id="text9173"><tspan
              sodipodi:role="line"
              id="tspan9171"
-             style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222px;font-family:'Noto Sans CJK KR';-inkscape-font-specification:'Noto Sans CJK KR';fill:#808080;stroke-width:0.264583"
+             style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222px;font-family:FreeSans;-inkscape-font-specification:FreeSans;fill:#808080;stroke-width:0.264583"
              x="118.45325"
              y="176.03661">3 cc</tspan></text>
         <text
@@ -12035,7 +12040,7 @@
            id="text9173-7"><tspan
              sodipodi:role="line"
              id="tspan9171-9"
-             style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222px;font-family:'Noto Sans CJK KR';-inkscape-font-specification:'Noto Sans CJK KR';fill:#808080;stroke-width:0.264583"
+             style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222px;font-family:FreeSans;-inkscape-font-specification:'FreeSans Italic';fill:#808080;stroke-width:0.264583"
              x="186.01245"
              y="176.03661">2 cc</tspan></text>
       </g>
