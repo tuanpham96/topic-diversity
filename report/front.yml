@@ -1,0 +1,9 @@
+# resource-path: ["pandoc-resources", "."]
+# csl: ieee.csl
+citeproc: true
+metadata:
+  link-citations: true
+# bibliography: library.bib
+variables:
+  geometry: margin=1in
+

@@ -5,7 +5,7 @@
    viewBox="0 0 199.99051 229.55986"
    version="1.1"
    id="svg8"
-   inkscape:version="1.1 (ce6663b3b7, 2021-05-25)"
+   inkscape:version="1.1 (1:1.1+202105261517+ce6663b3b7)"
    sodipodi:docname="Fig1.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -11305,17 +11305,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="317.85714"
-     inkscape:cy="436.42857"
+     inkscape:zoom="1.4"
+     inkscape:cx="376.78571"
+     inkscape:cy="220.71429"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g37347"
      inkscape:document-rotation="0"
      showgrid="false"
      inkscape:window-width="1920"
-     inkscape:window-height="1052"
+     inkscape:window-height="1053"
      inkscape:window-x="0"
-     inkscape:window-y="28"
+     inkscape:window-y="27"
      inkscape:window-maximized="1"
      inkscape:snap-global="false"
      inkscape:pagecheckerboard="0"
@@ -11392,7 +11392,7 @@
       <rect
          style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.268188;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          id="rect17733"
-         width="199.99051"
+         width="199.991"
          height="229.55986"
          x="8.3596621"
          y="2.9771299" />
@@ -13202,7 +13202,7 @@
              id="tspan5541-4-8-5-4"
              x="133.55655"
              y="24.419899"
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.17722px;font-family:FreeSans;-inkscape-font-specification:'FreeSans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.354843">&quot;rabbit hole&quot;</tspan></text>
+             style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.17722px;font-family:FreeSans;-inkscape-font-specification:'FreeSans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.354843">self learning</tspan></text>
         <g
            style="fill:#0000ff;fill-opacity:1;stroke-width:0.458364"
            id="g3631-0"
@@ -13609,7 +13609,7 @@
              id="tspan5541-4-8-5-4-3"
              x="130.69545"
              y="61.144993"
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.17722px;font-family:FreeSans;-inkscape-font-specification:'FreeSans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.354843">&quot;recommender&quot;</tspan></text>
+             style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.17722px;font-family:FreeSans;-inkscape-font-specification:'FreeSans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.354843">social influence</tspan></text>
         <g
            style="fill:#ff0000;fill-opacity:1;stroke-width:0.458364"
            id="g3635-2"
