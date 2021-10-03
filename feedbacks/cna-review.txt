@@ -1,0 +1,51 @@
+Reviews from Complex Networks and Applications
+
+SUBMISSION: 242
+TITLE: Modelling the effects of self-learning and social influence on the diversity of knowledge
+
+
+----------------------- REVIEW 1 ---------------------
+SUBMISSION: 242
+TITLE: Modelling the effects of self-learning and social influence on the diversity of knowledge
+AUTHORS: Tuan Pham
+
+----------- Overall evaluation -----------
+The paper presents a computational model of knowledge  acquisition through self-learning or social learning/influence.
+
+While the paper is interesting to read, the writing needs to be improved significantly so it is a research paper.  The paper should not include expressions that identify the "I" and "author's wishes, such as "I present", "I want to examine", "I want to focus".  Please refer to standard scientific paper writing.
+The introduction of the figures need to be stated clearly so we can follow them (what is it plotted, what is the x-axis, what is the y-axis, and the difference between the plots within each image).  Good discussion of the results and their implications, but I am missing the point of the additional figures: better to include fewer and have a deeper discussion on them, then to put figures that are not meaningful without your discussion.  Also, what is the reason for bolding the names of the figures throughout the paper.
+
+
+
+----------------------- REVIEW 2 ---------------------
+SUBMISSION: 242
+TITLE: Modelling the effects of self-learning and social influence on the diversity of knowledge
+AUTHORS: Tuan Pham
+
+----------- Overall evaluation -----------
+Engaging research idea and a nice model to read about that could be of interest to a wide audience at the conference. The author investigates how an agent’s propensity to learn by self-exploration versus social influence affects the distribution of acquired knowledge. The model contains a network of knowledge topics and a social network of agents and the author investigates how the topology of these two, together with the parameter alpha contributes to knowledge diversity measured by a few individual and population-level metrics.
+The model is highly stylized but still offers some interesting insights and as such can be used as a fruitful playground for posing hypotheses and their investigation. Some model limitations that could be discussed in more detail are listed below:
+1) The effects of network topology (or the lack of it) could be more discussed in the paper, e.g. Fig S1 shows that quite different networks qualitatively lead to the same knowledge which should be more stressed and discussed in the main text. Also, the assumption that both the social network and topic network have the same topology is strong and could be more justified.
+2) A few parameter values and assumptions could be a bit more discussed, for example, the number of agents/topics - e.g. why more topics than users? Wikipedia, which was mentioned as one motivating example in the paper’s abstract, in its English version has about 6 million articles, but way more (potential) readers.
+3) Given the different network topologies investigated, it would be interesting to discuss possible relations between the agent’s position in the network and acquired knowledge.
+4) Typo at the beginning of section 2.2 “The concept of knowledge diversity” is probably there by mistake.
+
+
+
+----------------------- REVIEW 3 ---------------------
+SUBMISSION: 242
+TITLE: Modelling the effects of self-learning and social influence on the diversity of knowledge
+AUTHORS: Tuan Pham
+
+----------- Overall evaluation -----------
+The paper analyzes the change in the diversity of learned topics when self-learning (i.e., learn topics related to current knowledge) and social influence (i.e., learn topics known by peers) are considered.
+
+While the models are simple, the author considers several factors (such as intralayer random network models of scale-free, Erdos-Reyni, Watts-Strogatz, and Scholastic Block Models as well as interlayer initialization
+strategies for nonblock and block models) and performs an in-depth analysis of knowledge diversity in the population, individual, and group.
+
+The source code is shared through a public repository.
+
+Typo on page 4, Intralayer random models: Is "the model types and model hyper-parameters are" similar OR the same?
+
+Overall, the study is well prepared, performed, and presented.
+
