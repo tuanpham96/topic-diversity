@@ -297,32 +297,31 @@ Although initial group correspondence does not have much effect on the populatio
 Though there are interesting results in a theoretical sense as a toy model, there are many limitations with the current study.
     One of the major drawbacks is the assumption that the knowledge space would eventually outgrow the agent population size hence considering only $n_t > n_a$.
     Comparing the current estimate size of the indexed WWW \footnotemark[1] to the total internet users \footnotemark[2] might satisfy this assumption.
-    However, a more realistic approach would be to consider the subset of the internet involved directly with knowledge, e.g Wikipedia. Then size of the topic network \footnotemark[3] is around 2-3 orders of magnitude larger than the the potential agent network \footnotemark[2], countering this assumption.
+    However, a more realistic approach would be to consider the subset of the internet involved directly with knowledge, e.g Wikipedia. Then the size of the topic network \footnotemark[3] is around 2-3 orders of magnitude \textit{smaller} than the the potential agent network \footnotemark[2], countering this assumption.
 Another assumption is that the intralayer models for the topic and agent graph are considered similar for simplicity and for practical reasons.
 
 Future studies need to address these issues
     by integrating realistic knowledge and social network networks (or sampled versions of them) into the update process,
     or at least the intralayer size ratios and generative models based on their statistical properties.
 Other considerations include:
-    different ratios between intralayer network sizes,
-    inclusion of directed weighted edges (strengths could imply confidence in knowledge in $\tau$),
-    non-persistent interlayer edges,
-    different update probabilities (serendipity, forgetting, mastering, ...),
-    the cost of learning new subjects,
-    delays in acquiring new knowledge,
-    different versions of the update equation and, more importantly,
-    the dynamic nature of the intralayer networks (e.g. \cite{Sun2020-qj})
+    different ratios between intralayer network sizes;
+    inclusion of directed weighted edges (strengths could imply confidence in knowledge in $\tau$);
+    non-persistent interlayer edges;
+    different update probabilities (serendipity, forgetting, mastering, ...);
+    the cost of learning new subjects;
+    delays in acquiring new knowledge;
+    different versions of the update equation and, more importantly;
+    the dynamic nature of the intralayer networks (e.g. \cite{Sun2020-qj});
     and the decreased disruptiveness in new knowledge discovery \cite{Park2021-jb}.
 Furthermore, future endeavours should take into account performing the update process in real networks,
     which could be constructed using, as an example, the citation networks (agents as authors, papers as topics, groups as fields or subfields) or social networks \cite{Weng2015-zt}.
 
-Additionally, further analyses include examination of
-    the modularity changes in the bipartite $\tau$ \cite{Dankulov2015-uv} or in the projected graphs (for example, low $\alpha$ might start to create communities as evidenced by high Jaccard similarity in these simulations),
-    the distribution of specialists and generalists,
-    different local diversity definitions (e.g. topic entropy as a function of distance from a given agent),
-    relationships between an agent's properties (e.g. degree, centrality) \& position (e.g hub, periphery) in $G_a$ and the properties of their acquired topic sets (e.g. whether hub agents are more likely to also obtain peripheral arcane knowledge than peripheral agents) and lastly,
-    persistent homology analyses (since the interlayer edges are defined as persistent here).
-
+Additionally, further analyses could include examination of:
+    the modularity changes in the bipartite $\tau$ \cite{Dankulov2015-uv} or in the projected graphs (for example, low $\alpha$ might start to create communities as evidenced by high Jaccard similarity in these simulations);
+    the distribution of specialists and generalists;
+    different local diversity definitions (e.g. topic entropy as a function of distance from a given agent);
+    relationships between an agent's properties (e.g. degree, centrality) \& position (e.g hub, periphery) in $G_a$ and the properties of their acquired topic sets (e.g. whether hub agents are more likely to also obtain peripheral arcane knowledge than peripheral agents);
+    and lastly, persistent homology analyses (since the interlayer edges are defined as persistent here).
 
 
 \section{Acknowledgement}
@@ -330,13 +329,13 @@ Additionally, further analyses include examination of
 I would like to thank
     the reviewers of CNA 2021 for their comments,
     Dr. Mercedes Pascual and Dr. Sergio A. Alcala Corona for their \textit{Networks in Ecology and Evolution} course (Univ. of Chicago),
-    Dr. Julie S Haas (Lehigh Univ.)
+    % Dr. Julie S Haas (Lehigh Univ.)
     and my friends
         Sam Nguyen,
         Poojya Ravishankar,
         Silas Busch
 for their discussion and feedback on the model and interpretations.
-I would also acknowledge the Graduate Council Research \& Personal Development Fund (Univ. of Chicago).
+I would also like to acknowledge the Graduate Council Research \& Personal Development Fund (Univ. of Chicago).
 
 \bibliographystyle{splncs03}
 \bibliography{library}
