@@ -29,33 +29,56 @@
     This paper presents a computational model of acquiring new knowledge through self-learning (e.g. a Wikipedia ``rabbit hole'') or social influence (e.g. recommendations through friends).
     This is set up in a bipartite network between a static social network (\textit{agents}) and a static knowledge network (\textit{topics}).
     For simplicity, the learning process is singly parameterized by $\alpha$ as the probability of self-learning, leaving $1-\alpha$ as the socially-influenced discovery probability.
-    Numerical simulations show the tradeoff of $\alpha$ on the diversity of knowledge when examined at the population level (e.g. number of distinct topics) and at the individual level (e.g. the average distance between topics for an agent), consistent across different intralayer configurations.
-    Particularly, higher $\alpha$, more prone to self-learning, leads to higher population diversity and robustness.
-    However lower $\alpha$, more prone to social influence, more easily expands individual knowledge diversity on average.
-    These numerical results might provide some basic insights into how social influence could affect the diversity of human knowledge, especially in the age of information and social media.
+    Numerical simulations show a tradeoff of $\alpha$ on the diversity of knowledge when examined at the population level (e.g. number of distinct topics) and at the individual level (e.g. the average distance between topics for an agent), consistent across different intralayer configurations.
+    In particular, higher values of $\alpha$, or increased self-learning tendency, lead to higher population diversity and robustness.
+    However, lower values of $\alpha$, where learning/discovery is more easily influenced by social inputs, expand individual knowledge diversity more readily.
+    These numerical results might provide some basic insights into how social influences can affect the diversity of human knowledge, especially in the age of information and social media.
 \keywords{topic diversity, knowledge discovery, bipartite network, social influence, self-learning}
 \end{abstract}
 
 \section{Introduction} \label{sec:intro}
 
-As the world becomes more connected and the amount of information increases, how do we learn about the existing body of knowledge, while simultaneously updating with the new, incoming information?
+As the world becomes more connected
+    and the amount, as well as accessibility, of information in it increases,
+how do we learn an existing body of knowledge,
+    while simultaneously updating with the new, incoming information?
 How diverse is knowledge acquired through social interactions?
-Are people becoming more specialized or generalized as a result, and also due to limited cognitive capacity, especially since specialization has interesting implications in creativity and research productivity \cite{Teodoridis2019-tc}?
+Coupled with limited cognitive capacity,
+    do people become more specialized or generalized as a result,
+    especially since specialization has implications for creativity and research productivity \cite{Teodoridis2019-tc}?
 
 Answering these questions might be difficult at this point without assessing simple cases of learning within static networks.
-Previous works either include only topic diversity analysis at the population level without considering the evolution of new topic acquisition \cite{Weng2015-zt} or dynamic processes and analyses within only the intralayer networks \cite{Sun2020-qj}.
-Recent work does address the involvement of social interaction in innovation dynamics, but does not directly address the level of social influence nor analyze resulting knowledge diversity in details \cite{Iacopini2020-jm}.
-Hence, this report aims to examine how different knowledge acquisition strategies could affect one's knowledge set, as well as the diversity of knowledge for the whole population.
+Previous work
+    addressed topic diversity analysis at the population level without considering the evolution of new topic acquisition \cite{Weng2015-zt},
+    or used dynamic processes and analyses within only the intralayer networks \cite{Sun2020-qj}.
+A recent study discusses
+    the involvement of social interaction in innovation dynamics,
+    but does not directly address the level of social influence
+    nor analyze the resulting knowledge diversity in details \cite{Iacopini2020-jm}.
+Thus, I examined how different knowledge acquisition strategies could affect individual knowledge sets, as well as the diversity of knowledge for the whole population.
 
 There are multiple ways a person could learn something new.
-This project focuses on only two ways: (1) active \textit{self-learning} by acquiring new knowledge through related topics  (Fig. \ref{fig:1}b); and (2) through \textit{social influence} as suggested by one's social circle  (Fig. \ref{fig:1}c).
-An example of the former is how one easily ``falls down a rabbit hole'' started from an already-known topic on Wikipedia or a reference in a journal article's bibliography section.
-On the other hand, an example of the second scenario is movie recommendations from friends or new research papers shared via social media.
-As everyone tends to have a certain capacity for learning, how would these two scenarios affect the diversity of knowledge of different \textit{individuals} on average (specialists versus generalists), and of the entire social network \textit{population} as a whole (can all topics be learnt)?
+This project focuses on only two ways:
+    (1) active \textit{self-learning} by acquiring new knowledge through related topics  (Fig. \ref{fig:1}b);
+    and (2) through \textit{social influence} as suggested by one's social circle  (Fig. \ref{fig:1}c).
+An example of the former is following a ``rabbit hole'',
+    starting from an already-known topic on Wikipedia
+    or a reference in a journal article's bibliography section.
+On the other hand, examples of the second scenario include
+    movie recommendations from friends
+    or new research papers shared via social media.
+As humans tend to have limited capacity for learning,
+    how would these two scenarios affect the diversity of knowledge of
+    different \textit{individuals} on average (specialists versus generalists),
+    and of the entire social network \textit{population} as a whole (e.g. can all topics be learnt)?
 
-Considering only these two different ways of acquiring new topics in a probabilistic manner, this study examines the diversity of knowledge, represented as different metrics based on the distribution of topics, as well as graph metrics.
+Considering only these two different ways of acquiring new topics in a probabilistic manner,
+    I examine the diversity of knowledge,
+    represented as different metrics based on the distribution of topics, as well as graph metrics.
 These are examined in simulations of randomly generated networks, with and without consideration of modularity within such networks.
-The results show that the self-learning process tends to improve topic diversity in the population manner, while recommendations through social influence would generally benefit individual diversity.
+The results show that
+    the self-learning process tends to improve topic diversity in the population manner,
+    while recommendations through social influence would generally benefit individual diversity.
 Consideration of groups within the models have mixed effects at the individual level more so than the population level.
 
 \section{Methods} \label{sec:method}
@@ -68,7 +91,7 @@ Consideration of groups within the models have mixed effects at the individual l
     \caption{
     \textit{Description of the topic update/discovery process in the model and the different knowledge diversity metrics}.
     (\textbf{a}) Illustration of the intralayer agent graph (\textit{red}) and topic graph (\textit{blue}) with the interlayer edges (\textit{gray}) representing the knowledge set of the agents.
-    \textit{Gray} cartoon triangles in (\textbf{b}) and (\textbf{c}) illustrate the update process either through learning/discovery by related topics (self-learning) or learning/discovery through friends (social influence).
+    \textit{Gray} triangles in (\textbf{b}) and (\textbf{c}) illustrate the update process either through learning/discovery by related topics (self-learning) or learning/discovery through friends (social influence).
     (\textbf{d}) Illustrations of different diversity metrics at the population level (each blue circle is a topic).
     (\textbf{e}) Illustrations of topic diversity metrics at the individual and local level (see Sect. \ref{sec:method-diversity} for detailed descriptions).
     }
@@ -111,9 +134,11 @@ At each time step, the probability matrix $P$ (of same size as $\tau$) with its 
 \end{eqnarray}
 
 The multiplication steps perform the traversal through neighbors across the intralayer networks.
-The binarization and subtraction with the current $\tau$ simplifies the implementation, to only learn new topics and to balance not being stuck around too popular topics.
-Additionally, for simplicity we consider $\beta = 1 - \alpha$ so the process is only defined by $\alpha$.
-Many other probabilities are ignored as well, for example serendipity (wandering or random discovery of new topics) and forgetting (removal or decrease of strength of interlayer edges).
+The binarization and subtraction with the current $\tau$ simplifies the implementation, so that agents only learn new topics and avoid ``being stuck'' around too popular topics.
+Additionally, for simplicity I consider $\beta = 1 - \alpha$ so the process is only defined by $\alpha$.
+Many other probabilities are ignored as well, for example
+    serendipity (wandering or random discovery of new topics)
+    and forgetting (removal or decrease of strength of interlayer edges).
 
 \vspace{-1em}
 \subsubsection*{Intralayer random models}
@@ -131,13 +156,19 @@ For simplicity, the former is kept fixed while varying the latter (see Fig. \ref
 \vspace{-1em}
 \subsubsection*{Interlayer initialization}
 
-Generally, at the initialization stage, the probability of connection between a given agent and topic could be the same across topics.
-However, it is possible that other initialization strategies might bias the results in one way or another.
-Hence, two different interlayer initialization strategies are introduced, one for \textit{nonblock} intralayer models and one for \textit{block} models. Whenever an initialization method is not mentioned, it is assumed to be the uniform random strategy.
+At the initialization stage, the probability of connection between a given agent and topic is uniform across topics.
+However, it is possible that other initialization strategies could influence the results.
+Hence, two different interlayer initialization strategies are introduced,
+    one for \textit{nonblock} intralayer models
+    and one for \textit{block} models.
+Whenever an initialization method is not mentioned, it is assumed to be the uniform random strategy.
 
-For \textit{nonblock} intralayer models, the probability of connecting to a certain topic could be dependent on its degree in $G_t$.
+For \textit{nonblock} intralayer models, the probability of connecting to a certain topic could depend on its degree in $G_t$.
 A way to do this is to perform the $\texttt{softmax}\left(\{d_i\}; \beta_{\sigma}\right)$ on the degrees, basically transforming the degree sequence $\{d_i\}$ to a probability distribution.
-With $\beta_{\sigma} < 0$ ($\texttt{SOFTMAX}_1$), low degrees are favored; $\beta_{\sigma} = 0$ is equivalent to random initialization ($\texttt{SOFTMAX}_2$), while $\beta_{\sigma} > 0$  ($\texttt{SOFTMAX}_3$) favors high degree topics (Fig. \ref{supp:2}a)
+With
+    $\beta_{\sigma} < 0$ ($\texttt{SOFTMAX}_1$), low degrees are favored;
+    $\beta_{\sigma} = 0$ is equivalent to random initialization ($\texttt{SOFTMAX}_2$),
+    while $\beta_{\sigma} > 0$  ($\texttt{SOFTMAX}_3$) favors high degree topics (Fig. \ref{supp:2}a).
 
 For \textit{block} intralayer models, group correspondence could be used as a strategy for initialization as the number of groups are the same for both graphs.
 This could be parameterized by $p_{sg}$ (Fig. \ref{fig:3}) as the probability that agents and topics of the same group ID are connected.
@@ -151,27 +182,37 @@ These diversity metrics are illustrated in Fig. \ref{fig:1}d,e.
 \subsubsection*{Population}
 
 Three population indices are defined, taken from an ecological perspective \cite{Tuomisto2010-pr}.
-First, $N_T$ is the number of distinct topics discovered when taking into account all agents' learnt topics (higher would mean more diverse).
-Second $H_p$ is the topic population entropy -- the Shannon entropy from the discrete probability distribution of all the topics in the population (higher would mean more diverse).
-Lastly, taken inspiration from ecological network stability analysis \cite{Memmott2004-os}, robustness can be calculated by cumulatively removing random agents and observing the remaining \% of distinct topics.
-The area under this curve is the robustness $R_T$ (higher would mean many agents need to be deleted to remove a large proportion of topics).
+First, $N_T$ is the number of distinct topics discovered when taking into account all agents' learnt topics, where higher values correspond to higher diversity.
+Second, $H_p$ is the topic population entropy -- the Shannon entropy from the discrete probability distribution of all the topics in the population (again, higher would suggest more diversity).
+Lastly, inspired by ecological network stability analysis \cite{Memmott2004-os}, robustness can be calculated by
+    cumulatively removing random agents
+    and observing the remaining percentage of distinct topics.
+The area under this curve is the robustness $R_T$, higher values of which indicate that many agents need to be deleted to remove a large proportion of topics.
 
 \vspace{-1em}
 \subsubsection*{Individual}
 
 Three individual indices are calculated and the averaged computations across nodes (or pairs) of the agent graph are reported.
-First, $d_g$ is the mean distance of the topics in each agent's learnt topics. In other words, if we define $D(t_i,t_j;G_t)$ as the shortest path distance in $G_t$ between $t_i$ and $t_j$, and an agent $a_k$'s topic set as $\tau[a_k] = \left\{t_h | \tau[t_h,a_k] = 1 \right\}$ then $d_g(a_k) = \left\langle D(t_i,t_j;G_t)\right\rangle_{t_i, t_j \in \tau[a_k]}$.
-Higher on average would suggest that the agents know more out of their comfort zone and tend more towards generalists.
-Another metric is the number connected component $n_{cc}(a_k)$ of the induced subgraph $G_t(\tau[a_k])$ -- higher would mean there are many ``islands'' of topics that the agent knows about, leaning toward generalist trend.
-Lastly, the mean pairwise Jaccard similarity $Js_T$ between agents' topic sets are calculated, lower would mean higher local diversity on average.
+First, $d_g$ is the mean distance of the topics in each agent's learnt topics.
+In other words, if we define
+    $D(t_i,t_j;G_t)$ as the shortest path distance in $G_t$ between $t_i$ and $t_j$,
+    and an agent $a_k$'s topic set as $\tau[a_k] = \left\{t_h | \tau[t_h,a_k] = 1 \right\}$
+    then $d_g(a_k) = \left\langle D(t_i,t_j;G_t)\right\rangle_{t_i, t_j \in \tau[a_k]}$.
+Higher values suggest that the agents know more outside of their comfort zone and tend more towards generalists.
+Another metric is the number of connected components $n_{cc}(a_k)$ in the induced subgraph $G_t(\tau[a_k])$,
+    where higher values indicate there are many ``islands'' of topics that the agent knows about, again leaning towards generalist.
+Lastly, the mean pairwise Jaccard similarity $Js_T$ between agents' topic sets are calculated, lower values suggest higher local diversity.
 
 \vspace{-1em}
 \subsubsection*{Group}
 
-Additionally, when groups are defined in the block intralayer models, one could also calculate the entropy of the topic group distribution, in both the population sense $H_{gp}$ and individual sense $H_{gi}$.
-More specifically, $H_{gp}$ is the entropy of the 10 topic groups when taking into account the group identities of all topics learnt by all agents.
-On the other hand, $H_{gi}$ is the average entropy of each agent's own topic entropy.
-These two quantities are different, e.g. there could be cases where $H_{gp}$ is maximized (all groups uniformly distributed) but $H_{gi}$ could be 0 (each agent only learns about the topics within the same group).
+With groups in the block intralayer models, I also calculated the entropy of the topic group distribution, in both the population sense $H_{gp}$ and individual sense $H_{gi}$.
+More specifically, $H_{gp}$ is the entropy of the 10 topic groups considering the group identities of all topics learnt by all agents.
+On the other hand, $H_{gi}$ is the average entropy of each agent's individual topic entropy.
+These two quantities are different; e.g.
+    $H_{gp}$ can be maximized (all groups uniformly distributed)
+    while $H_{gi}$ is 0 (each agent only learns about the topics within the same group).
+
 
 \subsection{Code availability}
 
@@ -207,23 +248,30 @@ However, it does not seem likely for the worst case considered here, where entro
 The initial decrease of $H_g$ when $\alpha = 0.1$ is because the agents start learning from each other, hence temporarily creating bias towards some topics, leading to decrease of entropy.
 It must be noted here that the entropies are already high initially due to initialization.
 However, taking the trends of both $N_T$ and $H_g$ into account, it is reasonable to say that higher $\alpha$ improves topic population diversity.
-Additionally, higher $\alpha$ leads to more robust retainment of the topics under random agent removal (i.e. higher $R_T$).
+Additionally, higher $\alpha$ leads to more robust retainment of the topics under random agent removal (i.e. higher $R_T$), though this is possibly partially an effect of higher $N_T$.
 
 On the other hand, topic individual diversity usually decreases based on the chosen metrics.
 Increased $\alpha$ leads to decreased mean learnt topics distance $d_g$ and number of components $n_{cc}$ in the induced subgraphs.
-Intuitively, higher social influence  -- lower $\alpha$ -- would allow the agents to access topics out of their comfort zone more easily, hence their own subgraph of topics tend to be more generalist, whereas higher $\alpha$ leads to more specialization.
+Intuitively, higher social influence  -- lower $\alpha$ -- would allow the agents to access topics outside of their comfort zone more easily,
+    hence their own subgraph of topics tend to be more generalized,
+    whereas higher $\alpha$ leads to more specialization.
 Lastly, at the local level $Js_T$, lower $\alpha$ leads to more similarity between neighbors, hence lower local diversity.
 Although not analyzed, this hints at how social influence could create modularity in the learnt topic graph $\tau$.
 
-These trends are quite consistent across different considerations of non-block models (Fig. \ref{supp:1}).
+These trends are qualitatively consistent across different considerations of non-block models (Fig. \ref{supp:1}), albeit some quantitative differences (especially in individual indices).
 Increases in $\alpha$ lead to higher topic population diversity ($N_T, H_p$), robustness ($R_T$) and local diversity ($Js_T$).
 On the other hand, such increases tend to result in loss of topic individual diversity ($d_g$, $n_{cc}$).
-When taking into account degree-dependent initialization strategies (Fig. \ref{supp:2}), favoring more obscure topics leads to the same trend as random initialization.
-However, initially favoring more popular topics actually would be detrimental generally across different population, local and individual diversity indices, especially for those networks generated by preferential attachments (\texttt{PA}) models, possibly because learning more easily gets stuck in the topics connected to the popular ones (last row in Fig. \ref{supp:2}b).
+Under consideration of degree-dependent initialization strategies (Fig. \ref{supp:2}), favoring more obscure topics leads to the same trend as random initialization.
+However, initially favoring more popular topics
+    is generally detrimental across different population, local and individual diversity indices,
+    especially for those networks generated by preferential attachments (\texttt{PA}) models,
+        possibly because learning more easily gets stuck in topics connected to the popular ones (last row in Fig. \ref{supp:2}b).
 
 
-In summary, in non-block intralayer models, higher self-learning $\alpha$ leads to higher topic diversity in a local and population context, but whereas higher social influence encourages higher individual topic diversity.
-Initialization favoring more popular topics seems to have a negative effect on these different metrics.
+In summary, in non-block intralayer models,
+    higher self-learning (higher $\alpha$) leads to higher topic diversity in a local and population context,
+    but higher social influence (lower $\alpha$) encourages individual topic diversity.
+Initializations that favor more popular topics have a negative effect on these different metrics.
 
 \begin{figure}[!ht]
     \centering
@@ -241,42 +289,77 @@ Initialization favoring more popular topics seems to have a negative effect on t
 \subsection{\textit{Block} intralayer models and topic group diversity}
 \label{results:block}
 
-As real-world networks usually contain communities within them, the stochastic block intralayer models (\texttt{SBM}) are used to model intralayer networks and investigate how diversity indices change due to $\alpha$ and network modularity.
-Generally, the trends for population diversity and robustness during the simulation are similar from previously discussed (Fig. \ref{supp:3}a).
-The trends as a function of model modularity do not seem to differ much either.
-Looking at the group population entropy $H_{gp}$ (Fig. \ref{supp:3}b, bottom), only when the networks are less modular do such values show a difference, albeit very small.
+As real-world networks usually contain communities within them,
+    the stochastic block intralayer models (\texttt{SBM}) are used to model intralayer networks
+    and investigate how diversity indices change due to $\alpha$ and network modularity.
+Generally, the trends for population diversity and robustness during the simulation are similar to those previously discussed (Fig. \ref{supp:3}a).
+Such trends as a function of model modularity do not differ much.
+Looking at the group population entropy $H_{gp}$ (Fig. \ref{supp:3}b, bottom), only when the networks are less modular do those values show a difference, albeit very small.
 
-In the individual perspective (Fig. \ref{supp:3}c), group modularity actually helps with diversity indices $d_g$ and $n_{cc}$, possibly because there are fewer long-range links.
+In the individual perspective (Fig. \ref{supp:3}c),
+    I note that group modularity increases diversity indices $d_g$ and $n_{cc}$, possibly because there are fewer long-range links.
 The trends for local diversity are roughly similar and not affected much by group modularity.
 Additionally, instead of only looking at topic group diversity in the population sense, one could also inspect it in the individual perspective.
-On average (Fig. \ref{supp:3}b, top), for more modular intralayer networks, social influence benefits topic group diversity in the agents, because the agents would have higher chance to learn out of their own comfort zone, especially if their initial topics belong to the same groups.
+On average (Fig. \ref{supp:3}b, top),
+    for more modular intralayer networks,
+    social influence benefits topic group diversity in the agents,
+    because the agents would have more chances to learn out of their own comfort zone,
+    especially if their initial topics belong to the same groups.
 With decreasing group modularity, these differences between $\alpha$ do not seem to matter any more.
 
-Inspecting the end values of these different metrics in Fig. \ref{fig:3} taken into account group-correspondence initialization strategies reveal these effects more clearly.
+The final values of these different metrics in Fig. \ref{fig:3}, with different group-correspondence initialization strategies, reveal these effects more clearly.
 
-More specifically, higher $\alpha$ and lower intralayer modularity generally leads to higher population topic diversity and robustness ($N_T, H_p, R_T$), whereas group correspondence initialization does not seem to have pronounced effects.
-Group modularity benefits the individual diversity ($d_g, n_{cc}$) but high initial group-correspondence would counter such effects, as learning gets stuck within communities.
+More specifically,
+    higher $\alpha$ and lower intralayer modularity generally leads to higher population topic diversity and robustness ($N_T, H_p, R_T$),
+    whereas group correspondence initialization does not seem to have pronounced effects.
+Group modularity
+    benefits individual diversity ($d_g, n_{cc}$)
+    but high initial group correspondence would counter such effects, as learning gets stuck within communities.
 At the local level, group-correspondence does not seem to affect $Js_T$ visibly.
 However, generally higher $\alpha$ and higher model modularity tends to decrease topic similarity, hence increasing local diversity.
 
-When we start to consider group entropies, generally low group modularity increases both topic group population ($H_{gp}$) and individual ($H_{gi}$) diversity.
-High initial correspondence seems to benefit group population diversity (although such benefits may be small, see Fig. \ref{supp:3}b), though it seems to decrease group individual diversity.
+For group entropies, low group modularity generally increases both topic group population ($H_{gp}$) and individual ($H_{gi}$) diversity.
+High initial correspondence
+    seems to benefit group \textit{population} diversity (although such benefits may be small, see Fig. \ref{supp:3}b),
+    but tends to decrease group \textit{individual} diversity.
 
-In summary, with consideration of intralayer block models, higher $\alpha$ still benefits more for population diversity and robustness, but not so much with group population diversity.
-In the presence of high social influence, high network modularity may hurt population diversity, regardless of initial group-correspondence.
-On the other hand, lower $\alpha$ is generally more beneficial for individual indices like discussed with SF models, including group individual diversity, but either low network modularity or high group correspondence tends to be harmful for these metrics.
-At the local level, higher $\alpha$ and high network modularity tends to be more beneficial for decreasing similarity between agents.
+In summary,
+    with consideration of intralayer block models,
+    higher $\alpha$ (self-learning tendency) benefits more for population diversity and robustness,
+    but less so for the group population diversity.
+In the presence of high social influence,
+    high network modularity may hurt population diversity,
+    regardless of initial group-correspondence.
+On the other hand,
+    lower $\alpha$ is generally more beneficial for individual indices like those discussed with SF models,
+    including group individual diversity,
+    but either low network modularity or high group correspondence could be harmful for these metrics.
+At the local level, higher $\alpha$ and high network modularity generally decrease knowledge similarity between agents.
 
 \section{Discussion}
 
-In conclusion, with this simple toy model of topic discovery and a simple update rule depending on the probability of traversing through neighbors of bipartite networks, some interesting results are obtained.
-First of all, increasing $\alpha$ (self-learning, traversing through interlayer edges first) leads to higher topic population diversity and robustness in various random models for the intralayer networks, including block and non-block models.
-However, such increase has drawbacks when looking at topic individual diversity, as it reduces the chance for the agent nodes to acquire interlayer edges from topics that are usually out of their comfort zone.
-Social influence, traversing through intralayer edges first ($\beta$ route) would better benefit individual diversity.
+In conclusion,
+    with this simple toy model of topic discovery
+    and a simple update rule that depends on the probability of traversing neighbors in bipartite networks,
+    several interesting results emerge.
+First,
+    increasing $\alpha$ (self-learning, traversing through interlayer edges first)
+    leads to higher topic population diversity and robustness
+    in several random models for the intralayer networks,
+    including block and non-block models.
+However,
+    such increase has drawbacks for topic individual diversity,
+    as it reduces the chance for the agent nodes to acquire interlayer edges from topics that are usually distant from their comfort zone.
+Social influence, traversing through intralayer edges first ($\beta$ route),
+    would better influence individual diversity.
 
-When intralayer groups are considered, group modularity may hurt the population diversity (though some only by a little) and more apparently the group individual entropy.
+When intralayer groups are considered,
+    group modularity may hurt the population diversity (some more than other)
+    and more apparently the group individual entropy.
 Interestingly, it appears more beneficial for individual indices in term of graph distances and components.
-Although initial group correspondence does not have much effect on the population diversity, it has a dramatic drawback at the individual level (both entropy and graph metrics).
+Although initial group correspondence
+    does not have much effect on the population diversity,
+    it has a dramatic drawback at the individual level (both entropy and graph metrics).
 
 
 \footnotetext[1]{
@@ -301,8 +384,8 @@ Though there are interesting results in a theoretical sense as a toy model, ther
 Another assumption is that the intralayer models for the topic and agent graph are considered similar for simplicity and for practical reasons.
 
 Future studies need to address these issues
-    by integrating realistic knowledge and social network networks (or sampled versions of them) into the update process,
-    or at least the intralayer size ratios and generative models based on their statistical properties.
+    by integrating realistic knowledge and social network networks (or sampled versions of them) into the model,
+    or at least the intralayer size ratios and generative models based on realistic network statistical properties.
 Other considerations include:
     different ratios between intralayer network sizes;
     inclusion of directed weighted edges (strengths could imply confidence in knowledge in $\tau$);
@@ -310,13 +393,13 @@ Other considerations include:
     different update probabilities (serendipity, forgetting, mastering, ...);
     the cost of learning new subjects;
     delays in acquiring new knowledge;
-    different versions of the update equation and, more importantly;
-    the dynamic nature of the intralayer networks (e.g. \cite{Sun2020-qj});
-    and the decreased disruptiveness in new knowledge discovery \cite{Park2021-jb}.
-Furthermore, future endeavours should take into account performing the update process in real networks,
-    which could be constructed using, as an example, the citation networks (agents as authors, papers as topics, groups as fields or subfields) or social networks \cite{Weng2015-zt}.
+    different versions of the update equation;
+    the decreased disruptiveness in new knowledge discovery \cite{Park2021-jb};
+    and, more importantly, the dynamic nature of the intralayer networks (e.g. \cite{Sun2020-qj}).
+Furthermore, future endeavours should also take into account performing the update process in real networks,
+    which could be constructed using, as an example, the citation networks (agents as authors, papers as topics, groups as fields or subfields) or social networks (e.g. Twitter followers and hashtags) \cite{Weng2015-zt}.
 
-Additionally, further analyses could include examination of:
+Additionally, further analyses should include examination of:
     the modularity changes in the bipartite $\tau$ \cite{Dankulov2015-uv} or in the projected graphs (for example, low $\alpha$ might start to create communities as evidenced by high Jaccard similarity in these simulations);
     the distribution of specialists and generalists;
     different local diversity definitions (e.g. topic entropy as a function of distance from a given agent);
@@ -329,12 +412,12 @@ Additionally, further analyses could include examination of:
 I would like to thank
     the reviewers of CNA 2021 for their comments,
     Dr. Mercedes Pascual and Dr. Sergio A. Alcala Corona for their \textit{Networks in Ecology and Evolution} course (Univ. of Chicago),
-    % Dr. Julie S Haas (Lehigh Univ.)
+    Dr. Julie S Haas (Lehigh Univ.)
     and my friends
         Sam Nguyen,
         Poojya Ravishankar,
         Silas Busch
-for their discussion and feedback on the model and interpretations.
+for their discussion and feedback on the model, interpretations and writing.
 I would also like to acknowledge the Graduate Council Research \& Personal Development Fund (Univ. of Chicago).
 
 \bibliographystyle{splncs03}
