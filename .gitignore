@@ -2,6 +2,8 @@
 data/*
 figures/*
 !figures/report
+!figures/cna21
+
 # History files
 .Rhistory
 .Rapp.history

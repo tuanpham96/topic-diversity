@@ -13,6 +13,7 @@
   - `vis-demo.Rmd`: generate some demo plots about model parameters
   - `vis-analysis.Rmd`: analysis plots for all simulations
 - `svproc/cnasubm`: `latex` files to generate CNA21 submission, along with necessary figure and bib files. The final document is also in [`docs/Pham-CNA2021.pdf`](docs/Pham-CNA2021.pdf).
+- `data`: download the data and analyses generated from scripts at <https://doi.org/10.6084/m9.figshare.17086832.v1>
 
 ## Notes
 
