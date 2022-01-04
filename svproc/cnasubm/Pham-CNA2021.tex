@@ -242,12 +242,12 @@ The simulations were run in parallel on Azure VM. Simulations, analyses and visu
 
 The changes of the different diversity metrics for the scale-free networks are shown in Fig. \ref{fig:2} as an example to illustrate the tradeoff effect of self-learning versus social influence probability on population and individual diversity.
 
-Generally, topic population diversity increases with self-learning probability $\alpha$ in terms of the topic entropy $H_g$ and number of topics $N_T$.
+Generally, topic population diversity increases with self-learning probability $\alpha$ in terms of the topic entropy $H_p$ and number of topics $N_T$.
 Through learning/discovery over time, low $\alpha$ could still achieve better population diversity.
 However, it does not seem likely for the worst case considered here, where entropy does not even increase considerably past its initial value.
-The initial decrease of $H_g$ when $\alpha = 0.1$ is because the agents start learning from each other, hence temporarily creating bias towards some topics, leading to decrease of entropy.
+The initial decrease of $H_p$ when $\alpha = 0.1$ is because the agents start learning from each other, hence temporarily creating bias towards some topics, leading to decrease of entropy.
 It must be noted here that the entropies are already high initially due to initialization.
-However, taking the trends of both $N_T$ and $H_g$ into account, it is reasonable to say that higher $\alpha$ improves topic population diversity.
+However, taking the trends of both $N_T$ and $H_p$ into account, it is reasonable to say that higher $\alpha$ improves topic population diversity.
 Additionally, higher $\alpha$ leads to more robust retainment of the topics under random agent removal (i.e. higher $R_T$), though this is possibly partially an effect of higher $N_T$.
 
 On the other hand, topic individual diversity usually decreases based on the chosen metrics.

@@ -6,7 +6,7 @@
   - [`Pham-CNA2021.pdf`](docs/Pham-CNA2021.pdf) describes the model and results
   - [`CNA21-242_Pham.pdf`](docs/CNA21-242_Pham.pdf) is the presentation file for [CNA21](https://complexnetworks.org/).
   - [`future-considerations.md`](docs/future-considerations.md) describes some future considerations and directions for the models and analyses
--  `feedbacks` contains all the comments and feedbacks received from multiple people (listed in the [report's acknowledgement section](docs/Pham-CNA2021.pdf))
+- `feedbacks` contains all the comments and feedbacks received from multiple people (listed in the [report's acknowledgement section](docs/Pham-CNA2021.pdf))
 - `src`:
   - `topic_discovery.R`: definitions for `TopicDiscovery` class (initialization and simulation)
   - `topic_analysis.R`: functions for running diversity analysis and time analysis
