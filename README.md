@@ -27,3 +27,27 @@
 - For update functions:
   - `update_bipartite_topicagent` and `update_learnt_topic` are quite manual and slow but rid off duplicates and already learnt subjects
   - `update_via_matmul` is much faster but the beta route doesn't choose a friend of aoi before hand
+
+## Citation
+
+The results are publised and you can refer to the following:
+
+> Pham, T. (2022). Modelling the Effects of Self-learning and Social Influence on the Diversity of Knowledge. In: Benito, R.M., Cherifi, C., Cherifi, H., Moro, E., Rocha, L.M., Sales-Pardo, M. (eds) Complex Networks & Their Applications X. COMPLEX NETWORKS 2021. Studies in Computational Intelligence, vol 1016. Springer, Cham. https://doi.org/10.1007/978-3-030-93413-2_4
+
+``` bib
+@InProceedings{10.1007/978-3-030-93413-2_4,
+  author="Pham, Tuan",
+  editor="Benito, Rosa Maria
+  and Cherifi, Chantal
+  and Cherifi, Hocine
+  and Moro, Esteban
+  and Rocha, Luis M.
+  and Sales-Pardo, Marta",
+  title="Modelling the Effects of Self-learning and Social Influence on the Diversity of Knowledge",
+  booktitle="Complex Networks {\&} Their Applications X",
+  year="2022",
+  publisher="Springer International Publishing",
+  address="Cham",
+  pages="42--53"
+}
+```
